@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_macros.html" import campo %}
+{% block titulo %}{{ "Editar arena" if arena else "Nova arena" }}{% endblock %}
+{% block conteudo %}
+<div class="cartao-form">
+  <h1>{{ "Editar " ~ arena.nome if arena else "Nova arena" }}</h1>
+  <form method="post" class="form" novalidate>
+    {{ campo("nome", "Nome da arena", form, erros, extra='required maxlength="100" autofocus') }}
+    {{ campo("endereco", "Endereço", form, erros, extra='required maxlength="200"') }}
+    <div class="linha-campos">
+      {{ campo("cidade", "Cidade", form, erros, extra='required maxlength="100"') }}
+      {{ campo("telefone", "Telefone", form, erros, tipo="tel", ajuda="Com DDD. Opcional.", extra='placeholder="(48) 99999-0000"') }}
+      {{ campo("valor_hora", "Valor da hora (R$)", form, erros, extra='inputmode="decimal" placeholder="150,00" required') }}
+    </div>
+    <div class="acoes">
+      <button class="btn">{{ "Salvar" if arena else "Cadastrar arena" }}</button>
+      <a class="btn btn-fantasma" href="{{ '/arenas/' ~ arena.id if arena else '/arenas' }}">Cancelar</a>
+    </div>
+  </form>
+  {% if arena %}
+  <form method="post" action="/arenas/{{ arena.id }}/excluir" class="zona-perigo"
+        data-msg="Excluir a arena {{ arena.nome }}?" onsubmit="return confirm(this.dataset.msg)">
+    <p>Arenas com partidas no histórico não podem ser excluídas.</p>
+    <button class="btn btn-perigo">Excluir arena</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

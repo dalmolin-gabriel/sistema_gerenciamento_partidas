@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Partidas{% endblock %} · Partidas</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+  <link rel="icon" href="{{ url_for('static', path='bola.svg') }}" type="image/svg+xml">
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-in">
+      <a href="/" class="marca"><img src="{{ url_for('static', path='bola.svg') }}" alt="" width="26" height="26">Partidas</a>
+      <nav class="menu">
+        <a href="/partidas" {% if request.url.path.startswith('/partidas') %}aria-current="page"{% endif %}>Partidas</a>
+        <a href="/times" {% if request.url.path.startswith('/times') %}aria-current="page"{% endif %}>Times</a>
+        <a href="/arenas" {% if request.url.path.startswith('/arenas') %}aria-current="page"{% endif %}>Arenas</a>
+        <a href="/classificacao" {% if request.url.path.startswith('/classificacao') %}aria-current="page"{% endif %}>Classificação</a>
+      </nav>
+      <div class="conta">
+        {% if usuario %}
+          <span class="quem" title="{{ usuario.email }}">{{ usuario.nome.split()[0] }}</span>
+          <form method="post" action="/sair"><button class="link">Sair</button></form>
+        {% else %}
+          <a href="/entrar" class="link">Entrar</a>
+          <a href="/cadastro" class="btn btn-claro">Criar conta</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main class="pagina">
+    {% for tipo, msg in avisos %}
+      <div class="aviso aviso-{{ tipo }}" role="status">{{ msg }}</div>
+    {% endfor %}
+    {% block conteudo %}{% endblock %}
+  </main>
+
+  <footer class="rodape">
+    Partidas · gestão de futebol suíço · <a href="/docs">API</a>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,65 @@
+{% macro cartao_partida(p) %}
+<a class="jogo jogo-{{ p.status }}" href="/partidas/{{ p.id }}">
+  <div class="jogo-quando">
+    <span class="jogo-dia">{{ p.inicio|data_curta }}</span>
+    <span class="jogo-arena">{{ p.arena.nome }}</span>
+  </div>
+  <div class="jogo-confronto">
+    <span class="jogo-time mandante">{{ p.mandante.nome }}</span>
+    {% if p.placar %}
+      <span class="placar">{{ p.gols_mandante }}<i>×</i>{{ p.gols_visitante }}</span>
+    {% else %}
+      <span class="placar placar-hora">{{ p.inicio|hora }}</span>
+    {% endif %}
+    <span class="jogo-time visitante">{{ p.visitante.nome }}</span>
+  </div>
+  <span class="selo selo-{{ p.status }}">{{ "A confirmar" if p.status == "agendada" else p.status|status_rotulo }}</span>
+</a>
+{% endmacro %}
+
+{% macro lista_partidas(lista, vazio="Nenhuma partida por aqui.") %}
+  {% if lista %}
+    <div class="jogos">{% for p in lista %}{{ cartao_partida(p) }}{% endfor %}</div>
+  {% else %}
+    <p class="vazio">{{ vazio }}</p>
+  {% endif %}
+{% endmacro %}
+
+{% macro campo(nome, rotulo, form, erros, tipo="text", ajuda=None) %}
+<label class="campo {% if erros.get(nome) %}com-erro{% endif %}">
+  <span>{{ rotulo }}</span>
+  <input type="{{ tipo }}" name="{{ nome }}" value="{{ form.get(nome, '') }}" {{ kwargs.get('extra', '')|safe }}
+         {% if erros.get(nome) %}aria-invalid="true"{% endif %}>
+  {% if erros.get(nome) %}<small class="erro">{{ erros[nome] }}</small>
+  {% elif ajuda %}<small>{{ ajuda }}</small>{% endif %}
+</label>
+{% endmacro %}
+
+{% macro tabela_classificacao(tabela, compacta=False) %}
+{% if tabela %}
+<div class="tabela-rolagem">
+<table class="tabela">
+  <thead>
+    <tr>
+      <th class="pos">#</th><th class="nome">Time</th><th>P</th><th>J</th>
+      {% if not compacta %}<th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th>{% endif %}
+      <th>SG</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for l in tabela %}
+    <tr>
+      <td class="pos">{{ l.posicao }}</td>
+      <td class="nome"><a href="/times/{{ l.time_id }}">{{ l.time }}</a></td>
+      <td class="pts">{{ l.pontos }}</td><td>{{ l.jogos }}</td>
+      {% if not compacta %}<td>{{ l.vitorias }}</td><td>{{ l.empates }}</td><td>{{ l.derrotas }}</td><td>{{ l.gols_pro }}</td><td>{{ l.gols_contra }}</td>{% endif %}
+      <td>{{ '%+d'|format(l.saldo) if l.saldo else 0 }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="vazio">A tabela aparece assim que a primeira partida tiver placar.</p>
+{% endif %}
+{% endmacro %}

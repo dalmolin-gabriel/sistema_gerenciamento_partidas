@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block titulo %}Marcar partida{% endblock %}
+{% block conteudo %}
+<div class="cartao-form">
+  <h1>Marcar partida</h1>
+  {% if not meus_times %}
+    <div class="destaque">
+      <p>Para marcar uma partida você precisa ser responsável por pelo menos um time.</p>
+      <a class="btn" href="/times/novo">Criar um time</a>
+    </div>
+  {% elif not arenas %}
+    <div class="destaque"><p>Nenhuma arena cadastrada ainda. Peça para o dono da quadra criar uma conta de proprietário.</p></div>
+  {% else %}
+  {% if erros.get('geral') %}<div class="aviso aviso-erro">{{ erros.geral }}</div>{% endif %}
+  <form method="post" action="/partidas/nova" class="form" novalidate>
+    <div class="confronto-form">
+      <label class="campo {% if erros.get('mandante_id') %}com-erro{% endif %}"><span>Seu time (mandante)</span>
+        <select name="mandante_id" required>
+          {% for t in meus_times %}<option value="{{ t.id }}" {% if form.get('mandante_id')|string == t.id|string %}selected{% endif %}>{{ t.nome }}</option>{% endfor %}
+        </select>
+      </label>
+      <span class="vs">×</span>
+      <label class="campo {% if erros.get('visitante_id') %}com-erro{% endif %}"><span>Adversário (visitante)</span>
+        <select name="visitante_id" required>
+          <option value="">Escolha…</option>
+          {% for t in todos_times %}<option value="{{ t.id }}" {% if form.get('visitante_id')|string == t.id|string %}selected{% endif %}>{{ t.nome }}{% if t.cidade %} — {{ t.cidade }}{% endif %}</option>{% endfor %}
+        </select>
+        {% if erros.get('visitante_id') %}<small class="erro">Escolha o adversário.</small>{% endif %}
+      </label>
+    </div>
+
+    <label class="campo {% if erros.get('arena_id') %}com-erro{% endif %}"><span>Arena</span>
+      <select name="arena_id" required>
+        <option value="">Escolha…</option>
+        {% for a in arenas %}<option value="{{ a.id }}" {% if form.get('arena_id')|string == a.id|string %}selected{% endif %}>{{ a.nome }} · {{ a.cidade }} · {{ a.valor_hora|dinheiro }}/h</option>{% endfor %}
+      </select>
+      {% if erros.get('arena_id') %}<small class="erro">Escolha a arena.</small>{% endif %}
+    </label>
+
+    <div class="linha-campos">
+      <label class="campo {% if erros.get('data') %}com-erro{% endif %}"><span>Data</span>
+        <input type="date" name="data" min="{{ hoje }}" value="{{ form.get('data', sugestao_data) }}" required>
+        {% if erros.get('data') %}<small class="erro">{{ erros.data }}</small>{% endif %}
+      </label>
+      <label class="campo"><span>Início</span>
+        <input type="time" name="hora" step="900" value="{{ form.get('hora', '19:00') }}" required>
+        <small>Em intervalos de 15 min.</small>
+      </label>
+      <label class="campo {% if erros.get('duracao_min') %}com-erro{% endif %}"><span>Duração</span>
+        <select name="duracao_min">
+          {% for m, rotulo in [(30, "30 min"), (60, "1h"), (90, "1h30"), (120, "2h"), (150, "2h30"), (180, "3h")] %}
+          <option value="{{ m }}" {% if form.get('duracao_min', '60')|string == m|string %}selected{% endif %}>{{ rotulo }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <p class="sub">O sistema verifica se a arena e os dois times estão livres no horário. Se o adversário for de outro responsável, ele precisa confirmar.</p>
+    <div class="acoes">
+      <button class="btn">Marcar partida</button>
+      <a class="btn btn-fantasma" href="/partidas">Cancelar</a>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

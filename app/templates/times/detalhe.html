@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import lista_partidas %}
+{% block titulo %}{{ time.nome }}{% endblock %}
+{% block conteudo %}
+{% set e_meu = usuario and time.responsavel_id == usuario.id %}
+<div class="cabecalho">
+  <div class="titulo-time">
+    <span class="escudo grande">{{ time.nome[:2]|upper }}</span>
+    <div>
+      <p class="sobretitulo">{{ time.cidade or "Time" }} · responsável: {{ time.responsavel.nome }}</p>
+      <h1>{{ time.nome }}</h1>
+    </div>
+  </div>
+  <div class="acoes">
+    {% if e_meu %}
+      <a class="btn" href="/partidas/nova?mandante_id={{ time.id }}">Marcar partida</a>
+      <a class="btn btn-fantasma" href="/times/{{ time.id }}/editar">Editar</a>
+    {% elif usuario %}
+      <a class="btn" href="/partidas/nova?visitante_id={{ time.id }}">Desafiar</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if linha %}
+<dl class="numeros">
+  <div><dt>Posição</dt><dd>{{ linha.posicao }}º</dd></div>
+  <div><dt>Pontos</dt><dd>{{ linha.pontos }}</dd></div>
+  <div><dt>Jogos</dt><dd>{{ linha.jogos }}</dd></div>
+  <div><dt>V / E / D</dt><dd>{{ linha.vitorias }}/{{ linha.empates }}/{{ linha.derrotas }}</dd></div>
+  <div><dt>Saldo</dt><dd>{{ '%+d'|format(linha.saldo) if linha.saldo else 0 }}</dd></div>
+</dl>
+{% endif %}
+
+<div class="grade-2">
+  <section>
+    <h2 class="secao">Próximos jogos</h2>
+    {{ lista_partidas(proximas, "Nenhum jogo marcado.") }}
+  </section>
+  <section>
+    <h2 class="secao">Histórico</h2>
+    {{ lista_partidas(historico, "Ainda não jogou.") }}
+  </section>
+</div>
+{% endblock %}

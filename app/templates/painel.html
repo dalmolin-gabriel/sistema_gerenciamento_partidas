@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% from "_macros.html" import lista_partidas, cartao_partida, tabela_classificacao %}
+{% block titulo %}Painel{% endblock %}
+{% block conteudo %}
+<div class="cabecalho">
+  <div>
+    <p class="sobretitulo">Olá, {{ usuario.nome.split()[0] }}</p>
+    <h1>Seu painel</h1>
+  </div>
+  <div class="acoes">
+    {% if meus_times %}<a class="btn" href="/partidas/nova">Marcar partida</a>{% endif %}
+    <a class="btn btn-fantasma" href="/times/novo">Novo time</a>
+    {% if usuario.eh_proprietario %}<a class="btn btn-fantasma" href="/arenas/nova">Nova arena</a>{% endif %}
+  </div>
+</div>
+
+{% if not meus_times %}
+<div class="destaque">
+  <h2>Comece pelo seu time</h2>
+  <p>Você ainda não é responsável por nenhum time. Crie um (ou vários) para poder marcar partidas.</p>
+  <a class="btn" href="/times/novo">Criar meu primeiro time</a>
+</div>
+{% endif %}
+
+{% if convites %}
+<section class="bloco bloco-alerta">
+  <h2 class="secao">Convites para confirmar <span class="contador">{{ convites|length }}</span></h2>
+  <div class="jogos">
+    {% for p in convites %}
+    <div class="convite">
+      {{ cartao_partida(p) }}
+      <form method="post" action="/partidas/{{ p.id }}/confirmar"><button class="btn">Confirmar</button></form>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if aguardando_placar %}
+<section class="bloco">
+  <h2 class="secao">Aguardando placar <span class="contador">{{ aguardando_placar|length }}</span></h2>
+  {{ lista_partidas(aguardando_placar) }}
+</section>
+{% endif %}
+
+<div class="grade-2">
+  <section>
+    <h2 class="secao">Seus próximos jogos</h2>
+    {{ lista_partidas(proximas, "Nenhum jogo marcado para os seus times.") }}
+  </section>
+  <aside>
+    <h2 class="secao">Seus times</h2>
+    {% if meus_times %}
+      <ul class="lista-simples">
+        {% for t in meus_times %}<li><a href="/times/{{ t.id }}">{{ t.nome }}</a>{% if t.cidade %}<span>{{ t.cidade }}</span>{% endif %}</li>{% endfor %}
+      </ul>
+    {% else %}<p class="vazio">Nenhum ainda.</p>{% endif %}
+
+    <h2 class="secao">Classificação</h2>
+    {{ tabela_classificacao(tabela, compacta=True) }}
+    <p><a href="/classificacao">Ver tabela completa →</a></p>
+  </aside>
+</div>
+{% endblock %}
