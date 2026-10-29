@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block titulo %}{{ p.mandante.nome }} × {{ p.visitante.nome }}{% endblock %}
+{% block conteudo %}
+<section class="placar-grande placar-{{ p.status }}">
+  <span class="selo selo-{{ p.status }}">{{ p.status|status_rotulo }}</span>
+  <div class="placar-linha">
+    <a class="lado" href="/times/{{ p.mandante.id }}"><span class="escudo grande">{{ p.mandante.nome[:2]|upper }}</span><b>{{ p.mandante.nome }}</b><small>mandante</small></a>
+    {% if p.placar %}
+      <div class="centro"><span class="gols">{{ p.gols_mandante }}</span><i>×</i><span class="gols">{{ p.gols_visitante }}</span></div>
+    {% else %}
+      <div class="centro hora"><span>{{ p.inicio|hora }}</span><small>{{ p.inicio|data_curta }}</small></div>
+    {% endif %}
+    <a class="lado" href="/times/{{ p.visitante.id }}"><span class="escudo grande">{{ p.visitante.nome[:2]|upper }}</span><b>{{ p.visitante.nome }}</b><small>visitante</small></a>
+  </div>
+</section>
+
+<dl class="numeros">
+  <div><dt>Data</dt><dd class="txt">{{ p.inicio|data_longa }}</dd></div>
+  <div><dt>Horário</dt><dd class="txt">{{ p.inicio|hora }} – {{ p.fim|hora }}</dd></div>
+  <div><dt>Arena</dt><dd class="txt"><a href="/arenas/{{ p.arena.id }}">{{ p.arena.nome }}</a></dd></div>
+  <div><dt>Valor da reserva</dt><dd class="txt">{{ p.valor_total|dinheiro }}</dd></div>
+</dl>
+
+<div class="painel-acoes">
+  {% if pode.confirmar %}
+  <form method="post" action="/partidas/{{ p.id }}/confirmar" class="acao">
+    <h3>Aceitar o desafio</h3>
+    <p>Você é responsável pelo {{ p.visitante.nome }}. Confirme para garantir o horário.</p>
+    <button class="btn">Confirmar partida</button>
+  </form>
+  {% endif %}
+
+  {% if pode.placar %}
+  <form method="post" action="/partidas/{{ p.id }}/placar" class="acao">
+    <h3>Lançar placar</h3>
+    <div class="placar-form">
+      <label><span>{{ p.mandante.nome }}</span><input type="number" name="gols_mandante" min="0" max="99" required inputmode="numeric"></label>
+      <span class="vs">×</span>
+      <label><span>{{ p.visitante.nome }}</span><input type="number" name="gols_visitante" min="0" max="99" required inputmode="numeric"></label>
+    </div>
+    <button class="btn">Finalizar partida</button>
+  </form>
+  {% endif %}
+
+  {% if pode.remarcar %}
+  <form method="post" action="/partidas/{{ p.id }}/remarcar" class="acao">
+    <h3>Remarcar</h3>
+    <div class="linha-campos">
+      <label class="campo"><span>Data</span><input type="date" name="data" value="{{ '%04d-%02d-%02d'|format(p.inicio.year, p.inicio.month, p.inicio.day) }}" required></label>
+      <label class="campo"><span>Início</span><input type="time" name="hora" step="900" value="{{ p.inicio|hora }}" required></label>
+      <label class="campo"><span>Duração (min)</span><input type="number" name="duracao_min" min="30" max="180" step="15" value="{{ p.duracao_min }}"></label>
+    </div>
+    <button class="btn btn-fantasma">Salvar novo horário</button>
+  </form>
+  {% endif %}
+
+  {% if pode.cancelar or pode.excluir %}
+  <div class="acao acao-perigo">
+    {% if pode.cancelar %}
+    <form method="post" action="/partidas/{{ p.id }}/cancelar" data-msg="Cancelar esta partida?" onsubmit="return confirm(this.dataset.msg)">
+      <button class="btn btn-perigo">Cancelar partida</button>
+    </form>
+    {% endif %}
+    {% if pode.excluir %}
+    <form method="post" action="/partidas/{{ p.id }}/excluir" data-msg="Excluir de vez esta partida cancelada?" onsubmit="return confirm(this.dataset.msg)">
+      <button class="btn btn-perigo">Excluir partida</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

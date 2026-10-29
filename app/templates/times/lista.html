@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titulo %}Times{% endblock %}
+{% block conteudo %}
+<div class="cabecalho">
+  <div><h1>Times</h1></div>
+  <div class="acoes">
+    <form class="busca" method="get"><input type="search" name="busca" value="{{ busca }}" placeholder="Buscar time" aria-label="Buscar time"></form>
+    <a class="btn" href="/times/novo">Novo time</a>
+  </div>
+</div>
+{% if times %}
+<ul class="grade-cartoes">
+  {% for t in times %}
+  <li>
+    <a class="cartao" href="/times/{{ t.id }}">
+      <span class="escudo">{{ t.nome[:2]|upper }}</span>
+      <span class="cartao-txt"><b>{{ t.nome }}</b>
+        <small>{{ t.cidade or "Cidade não informada" }}{% if usuario and t.responsavel_id == usuario.id %} · <em>seu time</em>{% endif %}</small></span>
+    </a>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="vazio">{% if busca %}Nenhum time encontrado para “{{ busca }}”.{% else %}Nenhum time cadastrado ainda.{% endif %}</p>
+{% endif %}
+{% endblock %}

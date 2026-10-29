@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import campo %}
+{% block titulo %}{{ "Editar time" if time else "Novo time" }}{% endblock %}
+{% block conteudo %}
+<div class="cartao-form estreito">
+  <h1>{{ "Editar " ~ time.nome if time else "Novo time" }}</h1>
+  {% if not time %}<p class="sub">Você será o responsável. Pode criar quantos times quiser.</p>{% endif %}
+  <form method="post" class="form" novalidate>
+    {{ campo("nome", "Nome do time", form, erros, extra='required maxlength="100" autofocus') }}
+    {{ campo("cidade", "Cidade", form, erros, ajuda="Opcional.", extra='maxlength="100"') }}
+    <div class="acoes">
+      <button class="btn">{{ "Salvar" if time else "Criar time" }}</button>
+      <a class="btn btn-fantasma" href="{{ '/times/' ~ time.id if time else '/times' }}">Cancelar</a>
+    </div>
+  </form>
+  {% if time %}
+  <form method="post" action="/times/{{ time.id }}/excluir" class="zona-perigo"
+        data-msg="Excluir o time {{ time.nome }}? Essa ação não pode ser desfeita." onsubmit="return confirm(this.dataset.msg)">
+    <p>Times com partidas no histórico não podem ser excluídos.</p>
+    <button class="btn btn-perigo">Excluir time</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

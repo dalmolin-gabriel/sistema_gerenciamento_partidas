@@ -1,185 +1,170 @@
-# ⚽ Sistema de Gerenciamento de Partidas
+# ⚽ Partidas — Gestão de Futebol Suíço
 
-Sistema desenvolvido como projeto pessoal durante a graduação em Engenharia de Software, com o objetivo de aplicar na prática os conhecimentos adquiridos em programação, banco de dados e desenvolvimento de sistemas.
+Aplicação web para organizar partidas de futebol suíço: responsáveis de time marcam jogos, donos de arena
+cadastram suas quadras, o sistema impede conflito de horário e a classificação se atualiza a cada placar.
 
-O projeto permite o gerenciamento de usuários, times, arenas e partidas de futebol suíço, utilizando Python e PostgreSQL.
-
----
-
-# 📌 Objetivo
-
-Desenvolver uma aplicação completa para colocar em prática conceitos estudados durante a graduação, simulando o desenvolvimento de um sistema real, desde a modelagem do banco de dados até a implementação das funcionalidades.
+Começou como um projeto de terminal na graduação em Engenharia de Software (UNISATC) e evoluiu para uma
+aplicação web completa, com login, API REST documentada, banco versionado por migrações, testes
+automatizados e Docker.
 
 ---
 
-# 🚀 Funcionalidades
+## Funcionalidades
 
-## Usuários
+**Contas e acesso**
+- Cadastro e login com senha protegida por hash (bcrypt). A senha nunca é guardada nem exibida.
+- Dois perfis: **jogador/responsável de time** e **dono de arena** (que também pode ter times).
 
-- Cadastro de usuários
-- Listagem de usuários
-- Atualização de usuários
-- Exclusão de usuários
+**Times**
+- Qualquer usuário pode criar e ser responsável por **quantos times quiser**.
+- Nome de time único (sem diferenciar maiúsculas/minúsculas).
+- Só o responsável edita ou exclui o time. Times com histórico de partidas não podem ser excluídos.
+- Página do time com próximos jogos, histórico e desempenho na tabela.
 
----
+**Arenas**
+- Cadastradas por contas de proprietário, com endereço, cidade, telefone e valor da hora.
+- Busca por cidade e agenda de horários reservados.
 
-## Times
+**Partidas**
+- Ciclo de vida: `agendada → confirmada → finalizada`, podendo ser `cancelada` antes de finalizar.
+- O responsável marca uma partida para o seu time contra qualquer adversário.
+- O responsável pelo time visitante recebe o convite no painel e confirma.
+  Se a mesma pessoa cuida dos dois times, a partida já nasce confirmada.
+- **Sem conflito de horário**: a arena não pode ter dois jogos sobrepostos, e nenhum time pode estar em
+  dois jogos ao mesmo tempo, mesmo em arenas diferentes. A verificação considera a duração do jogo.
+- Regras de agenda: só datas futuras (até 1 ano), início em intervalos de 15 minutos, duração de 30 a 180 min.
+- Remarcar exige nova confirmação do adversário. Cancelar libera o horário.
+- Placar lançado pelo mandante ou pelo dono da arena, só depois do início do jogo.
+- Valor da reserva calculado pela duração × valor da hora.
 
-- Cadastro de times
-- Listagem de times
-- Atualização de times
-- Exclusão de times
-
----
-
-## Arenas
-
-- Cadastro de arenas
-- Listagem de arenas
-- Atualização de arenas
-- Exclusão de arenas
-
----
-
-## Partidas
-
-- Cadastro de partidas
-- Listagem de partidas
-- Atualização de partidas
-- Exclusão de partidas
+**Classificação**
+- Vitória 3 pontos, empate 1. Desempate por vitórias, saldo de gols e gols pró.
 
 ---
 
-# 🛠 Tecnologias Utilizadas
+## Tecnologias
 
-- Python
-- PostgreSQL
-- SQL
-
----
-
-# 💻 Conceitos Aplicados
-
-Durante o desenvolvimento deste projeto foram aplicados conhecimentos de:
-
-- Programação em Python
-- Lógica de programação
-- Organização do código em módulos
-- Banco de dados relacional
-- Modelagem de banco de dados
-- Chaves primárias e estrangeiras
-- Relacionamentos entre tabelas
-- Operações CRUD
-- Consultas SQL
-- Trigger para implementação de regras de negócio
+| Camada | Tecnologia |
+|---|---|
+| Backend | Python 3.12, FastAPI |
+| Banco de dados | PostgreSQL 16, SQLAlchemy 2, Alembic (migrações) |
+| Telas | HTML renderizado no servidor (Jinja2) + CSS próprio, responsivo e com modo escuro |
+| Validação | Pydantic, com mensagens de erro em português |
+| Testes | pytest (40 testes, rodam em SQLite e PostgreSQL) |
+| Infra | Docker, Docker Compose, GitHub Actions |
 
 ---
 
-# 📂 Estrutura do Projeto
+## Como executar
 
-```
-app_esportivo
-│
-├── arena.py
-├── conexao.py
-├── main.py
-├── partida.py
-├── times.py
-├── usuario.py
-└── README.md
-```
-
----
-
-# ▶ Como executar
-
-## 1. Clone o repositório
+### Opção 1 — Docker (mais simples)
 
 ```bash
-git clone https://github.com/gabrieldalmolin06-wq/sistema_gerenciamento_partidas.git
+docker compose up --build
 ```
 
----
+Acesse **http://localhost:8000**. As migrações do banco rodam sozinhas.
 
-## 2. Entre na pasta do projeto
+Para carregar dados de demonstração (times, arenas, jogos e tabela preenchida):
 
 ```bash
-cd sistema_gerenciamento_partidas
+docker compose exec app python -m app.seed
 ```
 
----
+Entre com `gabriel@exemplo.com` / `senha1234`. Outras contas: `lucas@`, `ana@` e `arena@exemplo.com` (dono de arena), todas com a mesma senha.
 
-## 3. Configure o banco de dados
-
-Crie o banco de dados PostgreSQL e execute o script SQL utilizado no projeto.
-
-Depois configure as informações de conexão no arquivo:
-
-```
-conexao.py
-```
-
----
-
-## 4. Execute a aplicação
+### Opção 2 — Local, com seu PostgreSQL
 
 ```bash
-python main.py
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
+
+cp .env.example .env               # ajuste DATABASE_URL e SECRET_KEY
+alembic upgrade head               # cria as tabelas
+python -m app.seed                 # opcional: dados de exemplo
+uvicorn app.main:app --reload
 ```
 
 ---
 
-# 🗄 Banco de Dados
+## API REST
 
-O banco foi desenvolvido utilizando PostgreSQL.
+A documentação interativa fica em **http://localhost:8000/docs** (Swagger).
 
-A estrutura do sistema é composta por tabelas relacionadas para gerenciamento de:
+Principais rotas (prefixo `/api/v1`):
 
-- Usuários
-- Times
-- Arenas
-- Partidas
+| Método | Rota | Descrição |
+|---|---|---|
+| POST | `/auth/cadastro`, `/auth/login`, `/auth/logout` | Conta e sessão |
+| GET | `/auth/eu` | Usuário logado |
+| GET/POST | `/times` | Listar (com `?busca=`) / criar |
+| PUT/DELETE | `/times/{id}` | Editar / excluir |
+| GET/POST | `/arenas` | Listar (com `?cidade=`) / criar |
+| GET/POST | `/partidas` | Listar (filtros `status`, `time_id`, `arena_id`, `futuras`) / marcar |
+| POST | `/partidas/{id}/confirmar` | Visitante aceita |
+| POST | `/partidas/{id}/remarcar` | Novo horário |
+| POST | `/partidas/{id}/cancelar` | Cancela |
+| POST | `/partidas/{id}/placar` | Finaliza com placar |
+| GET | `/classificacao` | Tabela |
 
-Também foi implementada uma **Trigger** para aplicar uma regra de negócio diretamente no banco de dados.
-
----
-
-# 📖 Aprendizados
-
-Este projeto permitiu colocar em prática conhecimentos importantes da graduação, como:
-
-- Desenvolvimento de aplicações em Python
-- Organização de projetos
-- Manipulação de banco de dados PostgreSQL
-- Escrita de consultas SQL
-- Desenvolvimento de operações CRUD
-- Relacionamentos entre tabelas
-- Implementação de regras de negócio
-- Resolução de problemas durante o desenvolvimento
-
-Além do aprendizado técnico, o projeto contribuiu para desenvolver habilidades como organização, persistência, resolução de problemas e busca contínua por novos conhecimentos.
+Erros de regra de negócio retornam uma mensagem clara em `detail`, com o status adequado:
+`401` sem login, `403` sem permissão, `404` não encontrado, `409` conflito (horário ocupado, nome repetido),
+`422` dado inválido.
 
 ---
 
-# 📌 Próximas melhorias
+## Testes
 
-Algumas funcionalidades poderão ser adicionadas futuramente:
+```bash
+pytest                       # SQLite em memória, sem configurar nada
+TEST_DATABASE_URL=postgresql+psycopg://partidas:partidas@localhost/partidas_teste pytest
+```
 
-- Sistema de autenticação de usuários
-- Interface gráfica
-- API para integração com aplicações web
-- Melhorias na validação dos dados
-- Relatórios e estatísticas das partidas
+Os testes cobrem as regras de negócio (conflitos de horário, permissões, ciclo de vida da partida,
+classificação) e as telas (formulários, mensagens de erro, redirecionamentos). O GitHub Actions roda tudo
+em PostgreSQL a cada push.
 
 ---
 
-# 👨‍💻 Autor
+## Estrutura
 
-**Gabriel Dalmolin**
+```
+app/
+├── main.py              # cria a aplicação e trata os erros
+├── config.py            # configurações via .env
+├── database.py          # conexão SQLAlchemy
+├── models.py            # tabelas
+├── schemas.py           # validação de entrada e saída
+├── security.py          # hash de senha
+├── deps.py              # usuário logado
+├── errors.py            # erros de domínio
+├── seed.py              # dados de demonstração
+├── services/            # regras de negócio (independentes de web)
+│   ├── usuarios.py  times.py  arenas.py  partidas.py  classificacao.py
+├── api/routes.py        # API REST (JSON)
+├── web/                 # telas
+│   ├── routes.py  ui.py
+├── templates/           # HTML (Jinja2)
+└── static/              # CSS e ícone
+alembic/                 # migrações do banco
+tests/                   # testes automatizados
+```
 
-Acadêmico de Engenharia de Software — UNISATC
+A regra de negócio vive só em `services/`. A API e as telas apenas chamam esses serviços, então uma regra
+nova vale automaticamente para os dois.
 
-📍 Criciúma - SC
+---
 
-GitHub:
-https://github.com/gabrieldalmolin06-wq
+## Produção
+
+- Defina `SECRET_KEY` com um valor aleatório e longo.
+- Com HTTPS, use `COOKIE_SEGURO=true`.
+- Reserva simultânea do mesmo horário é protegida por trava na linha da arena (`SELECT ... FOR UPDATE`).
+
+---
+
+## Autor
+
+**Gabriel Dalmolin** — Acadêmico de Engenharia de Software, UNISATC · Criciúma, SC
+GitHub: [dalmolin-gabriel](https://github.com/dalmolin-gabriel)

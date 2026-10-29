@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_macros.html" import lista_partidas, tabela_classificacao %}
+{% block titulo %}Início{% endblock %}
+{% block conteudo %}
+<section class="hero">
+  <div>
+    <p class="sobretitulo">Futebol suíço sem planilha e sem grupo bagunçado</p>
+    <h1>Marque o jogo, reserve a arena, confirme com o adversário.</h1>
+    <p class="hero-texto">Cadastre quantos times quiser, encontre arenas na sua cidade, evite conflito de horário
+      e acompanhe a classificação a cada placar lançado.</p>
+    <div class="acoes">
+      <a class="btn" href="/cadastro">Criar conta grátis</a>
+      <a class="btn btn-fantasma" href="/entrar">Já tenho conta</a>
+    </div>
+  </div>
+</section>
+
+<div class="grade-2">
+  <section>
+    <h2 class="secao">Próximos jogos</h2>
+    {{ lista_partidas(proximas, "Nenhum jogo marcado ainda.") }}
+  </section>
+  <section>
+    <h2 class="secao">Classificação</h2>
+    {{ tabela_classificacao(tabela, compacta=True) }}
+  </section>
+</div>
+{% endblock %}
