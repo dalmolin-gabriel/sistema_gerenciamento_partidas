@@ -1,11 +1,12 @@
 """Modelo de dados do sistema."""
 
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
 
 from sqlalchemy import (
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     Integer,
@@ -73,12 +74,17 @@ class Arena(Base):
     telefone: Mapped[str | None] = mapped_column(String(20))
     valor_hora: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     proprietario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
+    # Arena em destaque (anúncio pago) na vitrine da página inicial até esta data, inclusive.
+    destaque_ate: Mapped[date | None] = mapped_column(Date)
     criado_em: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     proprietario: Mapped[Usuario] = relationship(back_populates="arenas")
     campos: Mapped[list["Campo"]] = relationship(
         back_populates="arena", order_by="Campo.id", cascade="all, delete-orphan"
     )
+
+    def em_destaque(self, hoje: date) -> bool:
+        return self.destaque_ate is not None and self.destaque_ate >= hoje
 
     @property
     def varios_campos(self) -> bool:

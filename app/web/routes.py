@@ -17,7 +17,7 @@ from app.schemas import (
     TimeCriar,
     UsuarioCriar,
 )
-from app.services import arenas, classificacao, partidas, relogio, times, usuarios
+from app.services import arenas, classificacao, partidas, relogio, times, usuarios, vitrine
 from app.web.ui import avisar, erros_do_formulario, numero_decimal, redirecionar, render
 
 router = APIRouter(include_in_schema=False)
@@ -99,9 +99,12 @@ def sair(request: Request):
 
 # ======================= Painel =======================
 @router.get("/")
-def painel(request: Request, db: DB, usuario: UsuarioOpcional):
+def painel(request: Request, db: DB, usuario: UsuarioOpcional, cidade: str | None = None):
     if usuario is None:
+        lista_cidades = vitrine.cidades(db)
+        cidade = next((c for c in lista_cidades if cidade and c.lower() == cidade.strip().lower()), None)
         return render(request, "inicio.html",
+                      vitrine=vitrine.montar(db, cidade), cidades=lista_cidades, cidade=cidade,
                       proximas=partidas.listar(db, futuras=True)[:6],
                       tabela=classificacao.tabela(db)[:5])
     return render(

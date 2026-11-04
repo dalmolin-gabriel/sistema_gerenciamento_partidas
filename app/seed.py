@@ -49,7 +49,12 @@ def main() -> None:
     a1.campos = [Campo(nome="Campo 1"), Campo(nome="Campo 2"),
                  Campo(nome="Society coberto", valor_hora=Decimal("220.00"))]
     a2.campos = [Campo(nome="Campo 1")]
-    db.add_all([a1, a2])
+    a3 = Arena(nome="Içara Sports", endereco="Rua XV de Novembro, 80", cidade="Içara",
+               telefone="(48) 3462-0000", valor_hora=Decimal("130.00"), proprietario_id=dono.id)
+    a3.campos = [Campo(nome="Campo 1"), Campo(nome="Campo 2")]
+    # A Arena Centro pagou destaque na vitrine da página inicial por 30 dias.
+    a1.destaque_ate = (relogio.agora() + timedelta(days=30)).date()
+    db.add_all([a1, a2, a3])
     db.flush()
 
     hoje = relogio.agora().replace(hour=19, minute=0, second=0)
@@ -74,6 +79,7 @@ def main() -> None:
     jogo(3, 20, "Unidos do Rio Maina", "Real Pró-Vida", a2, A, duracao=90)
     jogo(2, 19, "Içara Futsal Clube", "Atlético Próspera", a1, C, campo=2)  # mesmo horário, outro campo
     jogo(6, 21, "Atlético Próspera", "Galáticos FC", a2, A)
+    jogo(0, 21, "Unidos do Rio Maina", "Içara Futsal Clube", a2, C)  # hoje: ocupa o 21h do Pinheirinho
     db.commit()
     print("Dados de exemplo criados. Entre com gabriel@exemplo.com / senha1234")
 

@@ -331,3 +331,72 @@ input:focus, select:focus { outline: 2px solid var(--destaque); outline-offset: 
   .campo-linha { grid-template-columns: 1fr; }
   .campos-lista li { padding-bottom: 12px; border-bottom: 1px solid var(--borda); }
 }
+
+/* ============ Vitrine de arenas (quadro grande da página inicial) ============ */
+.vitrine { display: flex; flex-direction: column; gap: 20px; padding: clamp(20px, 4vw, 40px); }
+.vitrine-topo { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.vitrine h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); max-width: none; }
+.vitrine-cidade select {
+  min-width: 200px; background: rgb(255 255 255 / .08); color: var(--cal);
+  border: 1px solid rgb(255 255 255 / .3);
+}
+.vitrine-cidade option { color: #14201b; }
+.vitrine-trilho {
+  display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scroll-behavior: smooth;
+  scrollbar-width: none; border-radius: 14px; outline-offset: 4px;
+}
+.vitrine-trilho::-webkit-scrollbar { display: none; }
+.vitrine-trilho:focus-visible { outline: 2px solid var(--destaque); }
+.vitrine-slide {
+  flex: 0 0 100%; scroll-snap-align: start; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: clamp(16px, 4vw, 40px); padding: clamp(18px, 3vw, 28px);
+  background: rgb(255 255 255 / .06); border: 1px solid rgb(255 255 255 / .12); border-radius: 14px;
+}
+.vitrine-info { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.vitrine-info h2 { font: 800 clamp(1.8rem, 4.5vw, 3rem)/1 var(--fonte-titulo); text-transform: uppercase; overflow-wrap: anywhere; }
+.vitrine-info h2 a { text-decoration: none; }
+.vitrine-local { margin: 0; opacity: .75; }
+.selo-destaque {
+  align-self: flex-start; background: var(--destaque); color: var(--destaque-txt);
+  font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; padding: 3px 10px; border-radius: 99px;
+}
+.vitrine-dados { display: flex; gap: 28px; margin: 4px 0 6px; }
+.vitrine-dados dt { font-size: .75rem; text-transform: uppercase; letter-spacing: .6px; opacity: .65; font-weight: 600; }
+.vitrine-dados dd { margin: 0; font: 800 1.9rem/1.1 var(--fonte-titulo); color: var(--destaque); }
+.vitrine-dados small { font: 500 .9rem var(--fonte); opacity: .7; color: var(--cal); }
+.vitrine-tel { color: var(--cal); opacity: .85; font-weight: 600; }
+.vitrine-horarios { display: flex; flex-direction: column; gap: 8px; align-self: center; }
+.vitrine-dia { margin: 0; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; font-size: .85rem; color: var(--destaque); }
+.vitrine-dia ~ .vitrine-dia { margin-top: 8px; }
+.horarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.horario {
+  display: grid; place-items: center; min-height: 48px; border-radius: 10px; text-decoration: none;
+  font: 800 1.35rem/1 var(--fonte-titulo); font-variant-numeric: tabular-nums;
+  background: var(--cal); color: var(--gramado); border: 2px solid transparent; transition: background .15s, transform .1s;
+}
+.horario:hover { background: var(--destaque); }
+.horario:active { transform: translateY(1px); }
+.horario:focus-visible { outline: 2px solid var(--destaque); outline-offset: 2px; }
+.vitrine-dica, .vitrine-vazio { margin: 0; opacity: .7; font-size: .9rem; }
+.vitrine-vazio a { color: var(--destaque); }
+.vitrine-controles { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: -6px; }
+.vitrine-seta {
+  width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgb(255 255 255 / .3); background: transparent;
+  color: var(--cal); font: 700 1.5rem/1 var(--fonte); cursor: pointer;
+}
+.vitrine-seta:hover { background: rgb(255 255 255 / .1); }
+.vitrine-pontos { display: flex; gap: 8px; }
+.vitrine-pontos a { width: 10px; height: 10px; border-radius: 50%; background: rgb(255 255 255 / .3); }
+.vitrine-pontos a[aria-current] { background: var(--destaque); width: 26px; border-radius: 99px; }
+.vitrine-rodape {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  padding-top: 18px; border-top: 1px solid rgb(255 255 255 / .12);
+}
+.vitrine-rodape p { margin: 0; max-width: 56ch; opacity: .85; }
+@media (max-width: 760px) {
+  .vitrine-slide { grid-template-columns: 1fr; }
+  .vitrine-cidade, .vitrine-cidade select { width: 100%; }
+  .vitrine-rodape .acoes { width: 100%; }
+  .vitrine-rodape .btn { flex: 1; }
+}
+.vitrine { background: repeating-linear-gradient(90deg, transparent 0 60px, rgb(255 255 255 / .035) 60px 120px), var(--gramado); }

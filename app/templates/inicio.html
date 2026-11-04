@@ -2,12 +2,75 @@
 {% from "_macros.html" import lista_partidas, tabela_classificacao %}
 {% block titulo %}Início{% endblock %}
 {% block conteudo %}
-<section class="hero">
-  <div>
-    <p class="sobretitulo">Futebol suíço sem planilha e sem grupo bagunçado</p>
-    <h1>Marque o jogo, reserve a arena, confirme com o adversário.</h1>
-    <p class="hero-texto">Cadastre quantos times quiser, encontre arenas na sua cidade, evite conflito de horário
-      e acompanhe a classificação a cada placar lançado.</p>
+<section class="hero vitrine" aria-label="Arenas da região">
+  <div class="vitrine-topo">
+    <div>
+      <p class="sobretitulo">Horários livres hoje e amanhã</p>
+      <h1>Arenas {{ "em " ~ cidade if cidade else "da região" }}</h1>
+    </div>
+    {% if cidades|length > 1 %}
+    <form class="vitrine-cidade" method="get" action="/">
+      <select name="cidade" aria-label="Cidade" onchange="this.form.submit()">
+        <option value="">Todas as cidades</option>
+        {% for c in cidades %}<option {% if c == cidade %}selected{% endif %}>{{ c }}</option>{% endfor %}
+      </select>
+      <noscript><button class="btn">Filtrar</button></noscript>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if vitrine %}
+  <div class="vitrine-trilho" tabindex="0" aria-label="Arenas. Use as setas para navegar.">
+    {% for item in vitrine %}
+    {% set a = item.arena %}
+    <article class="vitrine-slide" id="arena-{{ a.id }}" aria-label="{{ loop.index }} de {{ vitrine|length }}: {{ a.nome }}">
+      <div class="vitrine-info">
+        {% if item.destaque %}<span class="selo-destaque">Destaque</span>{% endif %}
+        <h2><a href="/arenas/{{ a.id }}">{{ a.nome }}</a></h2>
+        <p class="vitrine-local">{{ a.endereco }} · {{ a.cidade }}</p>
+        <dl class="vitrine-dados">
+          <div><dt>{{ "Campos" if a.varios_campos else "Campo" }}</dt><dd>{{ a.campos|length }}</dd></div>
+          <div><dt>A partir de</dt><dd>{{ item.preco_minimo|dinheiro }}<small>/h</small></dd></div>
+        </dl>
+        <div class="acoes">
+          <a class="btn btn-fantasma" href="/arenas/{{ a.id }}">Ver arena</a>
+          {% if a.telefone %}<a class="vitrine-tel" href="tel:{{ a.telefone|replace(' ', '') }}">{{ a.telefone }}</a>{% endif %}
+        </div>
+      </div>
+      <div class="vitrine-horarios">
+        {% for dia in item.dias %}
+          <p class="vitrine-dia">{{ dia.rotulo }}</p>
+          <div class="horarios">
+            {% for h in dia.horarios %}
+            <a class="horario" href="/partidas/nova?campo_id={{ h.campo_id }}&amp;data={{ h.inicio.strftime('%Y-%m-%d') }}&amp;hora={{ h.inicio|hora }}"
+               aria-label="Reservar {{ dia.rotulo|lower }} às {{ h.inicio|hora }}">{{ h.inicio|hora }}</a>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="vitrine-dia">Agenda cheia hoje e amanhã</p>
+          <p class="vitrine-vazio">Veja os próximos dias na página da arena.</p>
+        {% endfor %}
+        {% if item.dias %}<p class="vitrine-dica">Toque num horário para reservar.</p>{% endif %}
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% if vitrine|length > 1 %}
+  <div class="vitrine-controles">
+    <button type="button" class="vitrine-seta" data-dir="-1" aria-label="Arena anterior">‹</button>
+    <div class="vitrine-pontos">
+      {% for item in vitrine %}<a href="#arena-{{ item.arena.id }}" aria-label="{{ item.arena.nome }}" {% if loop.first %}aria-current="true"{% endif %}></a>{% endfor %}
+    </div>
+    <button type="button" class="vitrine-seta" data-dir="1" aria-label="Próxima arena">›</button>
+  </div>
+  {% endif %}
+  {% else %}
+  <p class="vitrine-vazio">Nenhuma arena cadastrada {{ "em " ~ cidade if cidade else "ainda" }}.
+    Tem uma arena? <a href="/cadastro">Cadastre grátis</a>.</p>
+  {% endif %}
+
+  <div class="vitrine-rodape">
+    <p>Marque o jogo, reserve a quadra e confirme com o adversário, sem planilha e sem grupo bagunçado.</p>
     <div class="acoes">
       <a class="btn" href="/cadastro">Criar conta grátis</a>
       <a class="btn btn-fantasma" href="/entrar">Já tenho conta</a>
@@ -25,4 +88,35 @@
     {{ tabela_classificacao(tabela, compacta=True) }}
   </section>
 </div>
+
+<script>
+(() => {
+  const trilho = document.querySelector(".vitrine-trilho");
+  const slides = trilho ? [...trilho.children] : [];
+  if (slides.length < 2) return;
+  const pontos = [...document.querySelectorAll(".vitrine-pontos a")];
+  const atual = () => Math.round(trilho.scrollLeft / trilho.clientWidth);
+  const ir = (i) => trilho.scrollTo({ left: ((i + slides.length) % slides.length) * trilho.clientWidth, behavior: "smooth" });
+
+  document.querySelectorAll(".vitrine-seta").forEach((b) =>
+    b.addEventListener("click", () => ir(atual() + Number(b.dataset.dir))));
+  pontos.forEach((p, i) => p.addEventListener("click", (e) => { e.preventDefault(); ir(i); }));
+  trilho.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowRight") { e.preventDefault(); ir(atual() + 1); }
+    if (e.key === "ArrowLeft") { e.preventDefault(); ir(atual() - 1); }
+  });
+  trilho.addEventListener("scroll", () => {
+    const i = atual();
+    pontos.forEach((p, j) => p.toggleAttribute("aria-current", i === j));
+  }, { passive: true });
+
+  // Passa sozinho a cada 6 s; para quando a pessoa interage ou prefere menos movimento.
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  let parado = false;
+  const vitrine = document.querySelector(".vitrine");
+  ["mouseenter", "focusin", "touchstart"].forEach((ev) => vitrine.addEventListener(ev, () => (parado = true), { passive: true }));
+  vitrine.addEventListener("mouseleave", () => (parado = false));
+  setInterval(() => { if (!parado && !document.hidden) ir(atual() + 1); }, 6000);
+})();
+</script>
 {% endblock %}

@@ -28,6 +28,15 @@ automatizados e Docker.
 - Cada campo pode ter preço próprio por hora; se ficar vazio, vale o valor da arena.
 - Busca por cidade e agenda de horários reservados, com filtro por campo.
 
+**Vitrine na página inicial**
+- O quadro grande da página inicial é um carrossel com as arenas da região, filtrável por cidade.
+- Cada arena mostra campos, preço a partir de e os **horários livres de hoje e amanhã** (um horário está livre
+  se algum campo estiver vago). Clicar num horário abre a reserva já preenchida com campo, data e hora;
+  sem login, a pessoa entra e volta direto para a reserva.
+- Arenas com `destaque_ate` em vigor aparecem primeiro com o selo "Destaque" (espaço para anúncio pago).
+  Por enquanto o destaque é definido direto no banco.
+- Considera funcionamento das 8h às 23h para todas as arenas (`app/services/vitrine.py`).
+
 **Partidas**
 - Ciclo de vida: `agendada → confirmada → finalizada`, podendo ser `cancelada` antes de finalizar.
 - O responsável marca uma partida para o seu time contra qualquer adversário.
@@ -54,7 +63,7 @@ automatizados e Docker.
 | Banco de dados | PostgreSQL 16, SQLAlchemy 2, Alembic (migrações) |
 | Telas | HTML renderizado no servidor (Jinja2) + CSS próprio, responsivo e com modo escuro |
 | Validação | Pydantic, com mensagens de erro em português |
-| Testes | pytest (53 testes, rodam em SQLite e PostgreSQL) |
+| Testes | pytest (62 testes, rodam em SQLite e PostgreSQL) |
 | Infra | Docker, Docker Compose, GitHub Actions |
 
 ---

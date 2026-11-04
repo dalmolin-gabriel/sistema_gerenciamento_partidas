@@ -41,7 +41,9 @@ def create_app() -> FastAPI:
         if request.url.path.startswith("/api/"):
             return JSONResponse({"detail": exc.mensagem}, status_code=exc.status_code)
         if isinstance(exc, NaoAutenticado):
-            destino = request.url.path if request.method == "GET" else "/"
+            destino = "/"
+            if request.method == "GET":
+                destino = request.url.path + (f"?{request.url.query}" if request.url.query else "")
             return RedirectResponse(f"/entrar?proximo={quote(destino)}", status_code=303)
         # Nas telas, erros que escaparam das rotas viram aviso e voltam para a página anterior.
         request.session.setdefault("avisos", []).append(["erro", exc.mensagem])
