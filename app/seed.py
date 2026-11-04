@@ -12,7 +12,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 
 from app.database import SessionLocal
-from app.models import Arena, Partida, StatusPartida, Time, TipoUsuario, Usuario
+from app.models import Arena, Campo, Partida, StatusPartida, Time, TipoUsuario, Usuario
 from app.security import gerar_hash
 from app.services import relogio
 
@@ -45,15 +45,20 @@ def main() -> None:
                telefone="(48) 3433-0000", valor_hora=Decimal("180.00"), proprietario_id=dono.id)
     a2 = Arena(nome="Society Pinheirinho", endereco="Av. Centenário, 2200", cidade="Criciúma",
                telefone="(48) 99999-1234", valor_hora=Decimal("150.00"), proprietario_id=dono.id)
+    # A Arena Centro tem três campos; o Society coberto é mais caro.
+    a1.campos = [Campo(nome="Campo 1"), Campo(nome="Campo 2"),
+                 Campo(nome="Society coberto", valor_hora=Decimal("220.00"))]
+    a2.campos = [Campo(nome="Campo 1")]
     db.add_all([a1, a2])
     db.flush()
 
     hoje = relogio.agora().replace(hour=19, minute=0, second=0)
 
-    def jogo(dias, hora, m, v, arena, status, placar=None, duracao=60):
+    def jogo(dias, hora, m, v, arena, status, placar=None, duracao=60, campo=0):
         inicio = (hoje + timedelta(days=dias)).replace(hour=hora)
         p = Partida(inicio=inicio, duracao_min=duracao, status=status, mandante_id=t[m].id,
-                    visitante_id=t[v].id, arena_id=arena.id, criado_por_id=t[m].responsavel_id)
+                    visitante_id=t[v].id, arena_id=arena.id, campo_id=arena.campos[campo].id,
+                    criado_por_id=t[m].responsavel_id)
         if placar:
             p.gols_mandante, p.gols_visitante = placar
         db.add(p)
@@ -67,7 +72,7 @@ def main() -> None:
     jogo(-6, 20, "Real Pró-Vida", "Atlético Próspera", a2, F, (3, 1))
     jogo(2, 19, "Real Pró-Vida", "Galáticos FC", a1, C)
     jogo(3, 20, "Unidos do Rio Maina", "Real Pró-Vida", a2, A, duracao=90)
-    jogo(5, 19, "Içara Futsal Clube", "Atlético Próspera", a1, C)
+    jogo(2, 19, "Içara Futsal Clube", "Atlético Próspera", a1, C, campo=2)  # mesmo horário, outro campo
     jogo(6, 21, "Atlético Próspera", "Galáticos FC", a2, A)
     db.commit()
     print("Dados de exemplo criados. Entre com gabriel@exemplo.com / senha1234")

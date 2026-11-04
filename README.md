@@ -21,21 +21,25 @@ automatizados e Docker.
 - Só o responsável edita ou exclui o time. Times com histórico de partidas não podem ser excluídos.
 - Página do time com próximos jogos, histórico e desempenho na tabela.
 
-**Arenas**
+**Arenas e campos**
 - Cadastradas por contas de proprietário, com endereço, cidade, telefone e valor da hora.
-- Busca por cidade e agenda de horários reservados.
+- Uma arena pode ter **vários campos**, cada um com a sua própria agenda. O dono informa quantos no cadastro
+  e depois adiciona, renomeia ou exclui campos (sem perder histórico).
+- Cada campo pode ter preço próprio por hora; se ficar vazio, vale o valor da arena.
+- Busca por cidade e agenda de horários reservados, com filtro por campo.
 
 **Partidas**
 - Ciclo de vida: `agendada → confirmada → finalizada`, podendo ser `cancelada` antes de finalizar.
 - O responsável marca uma partida para o seu time contra qualquer adversário.
 - O responsável pelo time visitante recebe o convite no painel e confirma.
   Se a mesma pessoa cuida dos dois times, a partida já nasce confirmada.
-- **Sem conflito de horário**: a arena não pode ter dois jogos sobrepostos, e nenhum time pode estar em
+- **Sem conflito de horário**: um campo não pode ter dois jogos sobrepostos (campos diferentes da mesma
+  arena podem receber jogos no mesmo horário), e nenhum time pode estar em
   dois jogos ao mesmo tempo, mesmo em arenas diferentes. A verificação considera a duração do jogo.
 - Regras de agenda: só datas futuras (até 1 ano), início em intervalos de 15 minutos, duração de 30 a 180 min.
 - Remarcar exige nova confirmação do adversário. Cancelar libera o horário.
 - Placar lançado pelo mandante ou pelo dono da arena, só depois do início do jogo.
-- Valor da reserva calculado pela duração × valor da hora.
+- Valor da reserva calculado pela duração × valor da hora do campo.
 
 **Classificação**
 - Vitória 3 pontos, empate 1. Desempate por vitórias, saldo de gols e gols pró.
@@ -50,7 +54,7 @@ automatizados e Docker.
 | Banco de dados | PostgreSQL 16, SQLAlchemy 2, Alembic (migrações) |
 | Telas | HTML renderizado no servidor (Jinja2) + CSS próprio, responsivo e com modo escuro |
 | Validação | Pydantic, com mensagens de erro em português |
-| Testes | pytest (40 testes, rodam em SQLite e PostgreSQL) |
+| Testes | pytest (53 testes, rodam em SQLite e PostgreSQL) |
 | Infra | Docker, Docker Compose, GitHub Actions |
 
 ---
@@ -100,10 +104,12 @@ Principais rotas (prefixo `/api/v1`):
 | GET | `/auth/eu` | Usuário logado |
 | GET/POST | `/times` | Listar (com `?busca=`) / criar |
 | PUT/DELETE | `/times/{id}` | Editar / excluir |
-| GET/POST | `/arenas` | Listar (com `?cidade=`) / criar |
-| GET/POST | `/partidas` | Listar (filtros `status`, `time_id`, `arena_id`, `futuras`) / marcar |
+| GET/POST | `/arenas` | Listar (com `?cidade=`) / criar (com `quantidade_campos`) |
+| GET/POST | `/arenas/{id}/campos` | Listar / adicionar campo |
+| PUT/DELETE | `/arenas/{id}/campos/{campo_id}` | Editar nome e preço / excluir campo |
+| GET/POST | `/partidas` | Listar (filtros `status`, `time_id`, `arena_id`, `campo_id`, `futuras`) / marcar (informe `campo_id`; `arena_id` basta se ela tiver um campo só) |
 | POST | `/partidas/{id}/confirmar` | Visitante aceita |
-| POST | `/partidas/{id}/remarcar` | Novo horário |
+| POST | `/partidas/{id}/remarcar` | Novo horário (e, opcionalmente, outro campo) |
 | POST | `/partidas/{id}/cancelar` | Cancela |
 | POST | `/partidas/{id}/placar` | Finaliza com placar |
 | GET | `/classificacao` | Tabela |
@@ -160,7 +166,9 @@ nova vale automaticamente para os dois.
 
 - Defina `SECRET_KEY` com um valor aleatório e longo.
 - Com HTTPS, use `COOKIE_SEGURO=true`.
-- Reserva simultânea do mesmo horário é protegida por trava na linha da arena (`SELECT ... FOR UPDATE`).
+- Reserva simultânea do mesmo horário é protegida por trava na linha do campo (`SELECT ... FOR UPDATE`).
+- Ao atualizar uma instalação existente, `alembic upgrade head` cria um "Campo 1" em cada arena e liga
+  as partidas antigas a ele.
 
 ---
 

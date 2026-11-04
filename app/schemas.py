@@ -72,6 +72,22 @@ class TimeSaida(BaseModel):
     responsavel_id: int
 
 
+# ---------- Campos ----------
+class CampoCriar(BaseModel):
+    nome: str = Field(min_length=1, max_length=60)
+    valor_hora: Decimal | None = Field(default=None, ge=0, le=100000, decimal_places=2)
+
+    _nome = field_validator("nome")(_limpar)
+
+
+class CampoSaida(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    nome: str
+    valor_hora: Decimal | None
+    preco_hora: Decimal
+
+
 # ---------- Arenas ----------
 class ArenaCriar(BaseModel):
     nome: str = Field(min_length=2, max_length=100)
@@ -79,6 +95,8 @@ class ArenaCriar(BaseModel):
     cidade: str = Field(min_length=2, max_length=100)
     telefone: str | None = Field(default=None, max_length=20)
     valor_hora: Decimal = Field(ge=0, le=100000, decimal_places=2)
+    # Só usado no cadastro: cria "Campo 1", "Campo 2"... Depois os campos são geridos um a um.
+    quantidade_campos: int = Field(default=1, ge=1, le=20)
 
     _textos = field_validator("nome", "endereco", "cidade")(_limpar)
 
@@ -102,13 +120,16 @@ class ArenaSaida(BaseModel):
     telefone: str | None
     valor_hora: Decimal
     proprietario_id: int
+    campos: list[CampoSaida]
 
 
 # ---------- Partidas ----------
 class PartidaCriar(BaseModel):
     mandante_id: int
     visitante_id: int
-    arena_id: int
+    # Informe o campo. A arena sozinha basta quando ela tem um único campo.
+    arena_id: int | None = None
+    campo_id: int | None = None
     inicio: datetime
     duracao_min: int = Field(default=60, ge=30, le=180)
 
@@ -116,6 +137,8 @@ class PartidaCriar(BaseModel):
 class PartidaRemarcar(BaseModel):
     inicio: datetime
     duracao_min: int = Field(default=60, ge=30, le=180)
+    # Opcional: troca para outro campo da mesma arena.
+    campo_id: int | None = None
 
 
 class Placar(BaseModel):
@@ -133,6 +156,7 @@ class PartidaSaida(BaseModel):
     mandante: TimeSaida
     visitante: TimeSaida
     arena: ArenaSaida
+    campo: CampoSaida
     gols_mandante: int | None
     gols_visitante: int | None
     valor_total: Decimal

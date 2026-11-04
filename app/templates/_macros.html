@@ -1,8 +1,9 @@
-{% macro cartao_partida(p) %}
+{% macro cartao_partida(p, mostrar_arena=True) %}
 <a class="jogo jogo-{{ p.status }}" href="/partidas/{{ p.id }}">
   <div class="jogo-quando">
     <span class="jogo-dia">{{ p.inicio|data_curta }}</span>
-    <span class="jogo-arena">{{ p.arena.nome }}</span>
+    {% set local = (p.arena.nome ~ (" · " ~ p.campo.nome if p.arena.varios_campos else "")) if mostrar_arena else p.campo.nome %}
+    <span class="jogo-arena" title="{{ local }}">{{ local }}</span>
   </div>
   <div class="jogo-confronto">
     <span class="jogo-time mandante">{{ p.mandante.nome }}</span>
@@ -17,9 +18,9 @@
 </a>
 {% endmacro %}
 
-{% macro lista_partidas(lista, vazio="Nenhuma partida por aqui.") %}
+{% macro lista_partidas(lista, vazio="Nenhuma partida por aqui.", mostrar_arena=True) %}
   {% if lista %}
-    <div class="jogos">{% for p in lista %}{{ cartao_partida(p) }}{% endfor %}</div>
+    <div class="jogos">{% for p in lista %}{{ cartao_partida(p, mostrar_arena) }}{% endfor %}</div>
   {% else %}
     <p class="vazio">{{ vazio }}</p>
   {% endif %}

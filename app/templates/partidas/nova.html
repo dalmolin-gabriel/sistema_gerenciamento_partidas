@@ -29,12 +29,20 @@
       </label>
     </div>
 
-    <label class="campo {% if erros.get('arena_id') %}com-erro{% endif %}"><span>Arena</span>
-      <select name="arena_id" required>
+    <label class="campo {% if erros.get('campo_id') %}com-erro{% endif %}"><span>Arena e campo</span>
+      <select name="campo_id" required>
         <option value="">Escolha…</option>
-        {% for a in arenas %}<option value="{{ a.id }}" {% if form.get('arena_id')|string == a.id|string %}selected{% endif %}>{{ a.nome }} · {{ a.cidade }} · {{ a.valor_hora|dinheiro }}/h</option>{% endfor %}
+        {% for a in arenas %}
+          {% if a.varios_campos %}
+          <optgroup label="{{ a.nome }} · {{ a.cidade }}">
+            {% for c in a.campos %}<option value="{{ c.id }}" {% if form.get('campo_id')|string == c.id|string %}selected{% endif %}>{{ a.nome }} — {{ c.nome }} · {{ c.preco_hora|dinheiro }}/h</option>{% endfor %}
+          </optgroup>
+          {% else %}
+            {% for c in a.campos %}<option value="{{ c.id }}" {% if form.get('campo_id')|string == c.id|string %}selected{% endif %}>{{ a.nome }} · {{ a.cidade }} · {{ c.preco_hora|dinheiro }}/h</option>{% endfor %}
+          {% endif %}
+        {% endfor %}
       </select>
-      {% if erros.get('arena_id') %}<small class="erro">Escolha a arena.</small>{% endif %}
+      {% if erros.get('campo_id') %}<small class="erro">{{ erros.campo_id }}</small>{% endif %}
     </label>
 
     <div class="linha-campos">
@@ -54,7 +62,7 @@
         </select>
       </label>
     </div>
-    <p class="sub">O sistema verifica se a arena e os dois times estão livres no horário. Se o adversário for de outro responsável, ele precisa confirmar.</p>
+    <p class="sub">O sistema verifica se o campo e os dois times estão livres no horário. Se o adversário for de outro responsável, ele precisa confirmar.</p>
     <div class="acoes">
       <button class="btn">Marcar partida</button>
       <a class="btn btn-fantasma" href="/partidas">Cancelar</a>

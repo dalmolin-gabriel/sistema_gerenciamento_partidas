@@ -17,7 +17,7 @@
 <dl class="numeros">
   <div><dt>Data</dt><dd class="txt">{{ p.inicio|data_longa }}</dd></div>
   <div><dt>Horário</dt><dd class="txt">{{ p.inicio|hora }} – {{ p.fim|hora }}</dd></div>
-  <div><dt>Arena</dt><dd class="txt"><a href="/arenas/{{ p.arena.id }}">{{ p.arena.nome }}</a></dd></div>
+  <div><dt>Arena</dt><dd class="txt"><a href="/arenas/{{ p.arena.id }}">{{ p.arena.nome }}</a>{% if p.arena.varios_campos %} · {{ p.campo.nome }}{% endif %}</dd></div>
   <div><dt>Valor da reserva</dt><dd class="txt">{{ p.valor_total|dinheiro }}</dd></div>
 </dl>
 
@@ -49,6 +49,13 @@
       <label class="campo"><span>Data</span><input type="date" name="data" value="{{ '%04d-%02d-%02d'|format(p.inicio.year, p.inicio.month, p.inicio.day) }}" required></label>
       <label class="campo"><span>Início</span><input type="time" name="hora" step="900" value="{{ p.inicio|hora }}" required></label>
       <label class="campo"><span>Duração (min)</span><input type="number" name="duracao_min" min="30" max="180" step="15" value="{{ p.duracao_min }}"></label>
+      {% if p.arena.varios_campos %}
+      <label class="campo"><span>Campo</span>
+        <select name="campo_id">
+          {% for c in p.arena.campos %}<option value="{{ c.id }}" {% if c.id == p.campo_id %}selected{% endif %}>{{ c.nome }}</option>{% endfor %}
+        </select>
+      </label>
+      {% endif %}
     </div>
     <button class="btn btn-fantasma">Salvar novo horário</button>
   </form>

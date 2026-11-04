@@ -10,14 +10,52 @@
     <div class="linha-campos">
       {{ campo("cidade", "Cidade", form, erros, extra='required maxlength="100"') }}
       {{ campo("telefone", "Telefone", form, erros, tipo="tel", ajuda="Com DDD. Opcional.", extra='placeholder="(48) 99999-0000"') }}
-      {{ campo("valor_hora", "Valor da hora (R$)", form, erros, extra='inputmode="decimal" placeholder="150,00" required') }}
+      {{ campo("valor_hora", "Valor da hora (R$)", form, erros, ajuda="Padrão para todos os campos." if arena else None, extra='inputmode="decimal" placeholder="150,00" required') }}
     </div>
+    {% if not arena %}
+    {{ campo("quantidade_campos", "Quantos campos a arena tem?", form, erros, tipo="number",
+             ajuda="Eles serão criados como Campo 1, Campo 2… Depois você pode renomear e definir preços diferentes.",
+             extra='min="1" max="20" required') }}
+    {% endif %}
     <div class="acoes">
       <button class="btn">{{ "Salvar" if arena else "Cadastrar arena" }}</button>
       <a class="btn btn-fantasma" href="{{ '/arenas/' ~ arena.id if arena else '/arenas' }}">Cancelar</a>
     </div>
   </form>
+
   {% if arena %}
+  <section class="gestao-campos" id="campos">
+    <h2 class="secao">Campos <span class="contador">{{ arena.campos|length }}</span></h2>
+    <p class="sub">Cada campo tem a sua própria agenda. Deixe o preço vazio para usar o valor da hora da arena ({{ arena.valor_hora|dinheiro }}).</p>
+    <ul class="campos-lista">
+      {% for c in arena.campos %}
+      <li>
+        <form method="post" action="/arenas/{{ arena.id }}/campos/{{ c.id }}/editar" class="campo-linha">
+          <label class="campo"><span>Nome</span><input name="nome" value="{{ c.nome }}" maxlength="60" required></label>
+          <label class="campo"><span>Preço da hora (R$)</span>
+            <input name="valor_hora" inputmode="decimal" placeholder="Padrão: {{ '%.2f'|format(arena.valor_hora)|replace('.', ',') }}"
+                   value="{{ '%.2f'|format(c.valor_hora)|replace('.', ',') if c.valor_hora is not none else '' }}"></label>
+          <div class="campo-botoes">
+            <button class="btn btn-fantasma">Salvar</button>
+            {% if arena.varios_campos %}
+            <button class="btn btn-perigo" form="excluir-campo-{{ c.id }}">Excluir</button>
+            {% endif %}
+          </div>
+        </form>
+        {% if arena.varios_campos %}
+        <form id="excluir-campo-{{ c.id }}" method="post" action="/arenas/{{ arena.id }}/campos/{{ c.id }}/excluir"
+              data-msg="Excluir o campo {{ c.nome }}?" onsubmit="return confirm(this.dataset.msg)" hidden></form>
+        {% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="/arenas/{{ arena.id }}/campos/novo" class="campo-linha campo-novo">
+      <label class="campo"><span>Novo campo</span><input name="nome" placeholder="Campo {{ arena.campos|length + 1 }}" maxlength="60" required></label>
+      <label class="campo"><span>Preço da hora (R$)</span><input name="valor_hora" inputmode="decimal" placeholder="Igual ao da arena"></label>
+      <div class="campo-botoes"><button class="btn">Adicionar campo</button></div>
+    </form>
+  </section>
+
   <form method="post" action="/arenas/{{ arena.id }}/excluir" class="zona-perigo"
         data-msg="Excluir a arena {{ arena.nome }}?" onsubmit="return confirm(this.dataset.msg)">
     <p>Arenas com partidas no histórico não podem ser excluídas.</p>

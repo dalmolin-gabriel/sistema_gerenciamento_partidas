@@ -11,6 +11,7 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -75,6 +76,36 @@ class Arena(Base):
     criado_em: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     proprietario: Mapped[Usuario] = relationship(back_populates="arenas")
+    campos: Mapped[list["Campo"]] = relationship(
+        back_populates="arena", order_by="Campo.id", cascade="all, delete-orphan"
+    )
+
+    @property
+    def varios_campos(self) -> bool:
+        return len(self.campos) > 1
+
+
+class Campo(Base):
+    """Um campo (quadra) dentro de uma arena. Cada campo tem a sua própria agenda."""
+
+    __tablename__ = "campos"
+    __table_args__ = (
+        UniqueConstraint("arena_id", "nome", name="uq_campo_arena_nome"),
+        CheckConstraint("valor_hora IS NULL OR valor_hora >= 0", name="ck_campo_valor_hora"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    arena_id: Mapped[int] = mapped_column(ForeignKey("arenas.id"), index=True)
+    nome: Mapped[str] = mapped_column(String(60))
+    # Vazio = usa o valor da hora da arena. Preenchido = preço próprio deste campo.
+    valor_hora: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    criado_em: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    arena: Mapped[Arena] = relationship(back_populates="campos")
+
+    @property
+    def preco_hora(self) -> Decimal:
+        return self.valor_hora if self.valor_hora is not None else self.arena.valor_hora
 
 
 class Partida(Base):
@@ -96,6 +127,7 @@ class Partida(Base):
     mandante_id: Mapped[int] = mapped_column(ForeignKey("times.id"), index=True)
     visitante_id: Mapped[int] = mapped_column(ForeignKey("times.id"), index=True)
     arena_id: Mapped[int] = mapped_column(ForeignKey("arenas.id"), index=True)
+    campo_id: Mapped[int] = mapped_column(ForeignKey("campos.id"), index=True)
     gols_mandante: Mapped[int | None] = mapped_column(Integer)
     gols_visitante: Mapped[int | None] = mapped_column(Integer)
     criado_por_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
@@ -104,6 +136,7 @@ class Partida(Base):
     mandante: Mapped[Time] = relationship(foreign_keys=[mandante_id])
     visitante: Mapped[Time] = relationship(foreign_keys=[visitante_id])
     arena: Mapped[Arena] = relationship()
+    campo: Mapped[Campo] = relationship()
     criado_por: Mapped[Usuario] = relationship()
 
     @property
@@ -114,7 +147,7 @@ class Partida(Base):
 
     @property
     def valor_total(self) -> Decimal:
-        return (self.arena.valor_hora * Decimal(self.duracao_min) / Decimal(60)).quantize(
+        return (self.campo.preco_hora * Decimal(self.duracao_min) / Decimal(60)).quantize(
             Decimal("0.01")
         )
 

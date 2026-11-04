@@ -7,10 +7,10 @@ Em qualquer momento antes de finalizar, a partida pode ser cancelada.
 from datetime import datetime, timedelta
 
 from sqlalchemy import or_, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.errors import Conflito, NaoEncontrado, RegraNegocio, SemPermissao
-from app.models import Arena, Partida, StatusPartida, Time, Usuario
+from app.models import Arena, Campo, Partida, StatusPartida, Time, Usuario
 from app.schemas import PartidaCriar, PartidaRemarcar, Placar
 from app.services import arenas as arenas_service
 from app.services import relogio
@@ -23,7 +23,10 @@ OCUPAM_HORARIO = (StatusPartida.AGENDADA, StatusPartida.CONFIRMADA, StatusPartid
 
 def _consulta_base():
     return select(Partida).options(
-        joinedload(Partida.mandante), joinedload(Partida.visitante), joinedload(Partida.arena)
+        joinedload(Partida.mandante),
+        joinedload(Partida.visitante),
+        joinedload(Partida.campo),
+        joinedload(Partida.arena).selectinload(Arena.campos),
     )
 
 
@@ -40,6 +43,7 @@ def listar(
     status: str | None = None,
     time_id: int | None = None,
     arena_id: int | None = None,
+    campo_id: int | None = None,
     usuario: Usuario | None = None,
     futuras: bool | None = None,
 ) -> list[Partida]:
@@ -50,6 +54,8 @@ def listar(
         consulta = consulta.where(or_(Partida.mandante_id == time_id, Partida.visitante_id == time_id))
     if arena_id:
         consulta = consulta.where(Partida.arena_id == arena_id)
+    if campo_id:
+        consulta = consulta.where(Partida.campo_id == campo_id)
     if usuario is not None:
         meus_times = select(Time.id).where(Time.responsavel_id == usuario.id)
         consulta = consulta.where(
@@ -87,24 +93,41 @@ def _validar_horario(inicio: datetime, duracao_min: int) -> None:
         raise RegraNegocio("O horário de início deve ser em intervalos de 15 minutos (ex.: 19:00, 19:15).")
 
 
+def _resolver_campo(db: Session, arena_id: int | None, campo_id: int | None) -> Campo:
+    """Descobre o campo do jogo. Com um campo só na arena, basta informar a arena."""
+    if campo_id:
+        campo = db.get(Campo, campo_id)
+        if campo is None:
+            raise NaoEncontrado("Campo não encontrado.")
+        if arena_id and campo.arena_id != arena_id:
+            raise RegraNegocio("Esse campo não pertence à arena escolhida.")
+        return campo
+    if not arena_id:
+        raise RegraNegocio("Escolha a arena e o campo da partida.")
+    arena = arenas_service.obter(db, arena_id)
+    if len(arena.campos) == 1:
+        return arena.campos[0]
+    raise RegraNegocio(f"A arena {arena.nome} tem {len(arena.campos)} campos. Escolha em qual será o jogo.")
+
+
 def _verificar_conflitos(
     db: Session,
     *,
-    arena_id: int,
+    campo: Campo,
     times_ids: tuple[int, int],
     inicio: datetime,
     duracao_min: int,
     ignorar_id: int | None = None,
 ) -> None:
     fim = inicio + timedelta(minutes=duracao_min)
-    # Trava a linha da arena até o commit: duas reservas simultâneas não passam juntas.
-    db.execute(select(Arena.id).where(Arena.id == arena_id).with_for_update())
+    # Trava a linha do campo até o commit: duas reservas simultâneas não passam juntas.
+    db.execute(select(Campo.id).where(Campo.id == campo.id).with_for_update())
     consulta = _consulta_base().where(
         Partida.status.in_(OCUPAM_HORARIO),
         Partida.inicio < fim,
         Partida.inicio > inicio - DURACAO_MAXIMA,
         or_(
-            Partida.arena_id == arena_id,
+            Partida.campo_id == campo.id,
             Partida.mandante_id.in_(times_ids),
             Partida.visitante_id.in_(times_ids),
         ),
@@ -116,7 +139,9 @@ def _verificar_conflitos(
         if not (outra.inicio < fim and outra.fim > inicio):
             continue
         faixa = f"{outra.inicio:%d/%m %H:%M}–{outra.fim:%H:%M}"
-        if outra.arena_id == arena_id:
+        if outra.campo_id == campo.id:
+            if outra.arena.varios_campos:
+                raise Conflito(f"O campo “{campo.nome}” já está ocupado nesse horário ({faixa}).")
             raise Conflito(f"A arena já está ocupada nesse horário ({faixa}).")
         ocupado = outra.mandante if outra.mandante_id in times_ids else outra.visitante
         raise Conflito(f"O time {ocupado.nome} já tem uma partida nesse horário ({faixa}).")
@@ -133,12 +158,12 @@ def criar(db: Session, usuario: Usuario, dados: PartidaCriar) -> Partida:
         raise RegraNegocio("Um time não pode jogar contra ele mesmo.")
     mandante = times_service.obter(db, dados.mandante_id)
     visitante = times_service.obter(db, dados.visitante_id)
-    arena = arenas_service.obter(db, dados.arena_id)
+    campo = _resolver_campo(db, dados.arena_id, dados.campo_id)
     _exigir(mandante.responsavel_id == usuario.id, "Você só pode marcar partidas para os seus times.")
     _validar_horario(dados.inicio, dados.duracao_min)
     _verificar_conflitos(
         db,
-        arena_id=arena.id,
+        campo=campo,
         times_ids=(mandante.id, visitante.id),
         inicio=dados.inicio,
         duracao_min=dados.duracao_min,
@@ -155,7 +180,8 @@ def criar(db: Session, usuario: Usuario, dados: PartidaCriar) -> Partida:
         status=status,
         mandante_id=mandante.id,
         visitante_id=visitante.id,
-        arena_id=arena.id,
+        arena_id=campo.arena_id,
+        campo_id=campo.id,
         criado_por_id=usuario.id,
     )
     db.add(partida)
@@ -187,15 +213,17 @@ def remarcar(db: Session, usuario: Usuario, partida_id: int, dados: PartidaRemar
     if partida.status not in ATIVAS:
         raise RegraNegocio("Só é possível remarcar partidas agendadas ou confirmadas.")
     _validar_horario(dados.inicio, dados.duracao_min)
+    campo = _resolver_campo(db, partida.arena_id, dados.campo_id) if dados.campo_id else partida.campo
     _verificar_conflitos(
         db,
-        arena_id=partida.arena_id,
+        campo=campo,
         times_ids=(partida.mandante_id, partida.visitante_id),
         inicio=dados.inicio,
         duracao_min=dados.duracao_min,
         ignorar_id=partida.id,
     )
     partida.inicio, partida.duracao_min = dados.inicio, dados.duracao_min
+    partida.campo = campo
     # Novo horário precisa de novo aceite do adversário.
     if partida.visitante.responsavel_id != usuario.id:
         partida.status = StatusPartida.AGENDADA

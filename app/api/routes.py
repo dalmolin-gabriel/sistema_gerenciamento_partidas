@@ -11,6 +11,8 @@ from app.models import StatusPartida
 from app.schemas import (
     ArenaCriar,
     ArenaSaida,
+    CampoCriar,
+    CampoSaida,
     LinhaClassificacao,
     Login,
     PartidaCriar,
@@ -107,6 +109,28 @@ def excluir_arena(arena_id: int, db: DB, usuario: UsuarioLogado):
     return Response(status_code=204)
 
 
+# ---------- campos ----------
+@router.get("/arenas/{arena_id}/campos", response_model=list[CampoSaida], tags=["Arenas"])
+def listar_campos(arena_id: int, db: DB):
+    return arenas.obter(db, arena_id).campos
+
+
+@router.post("/arenas/{arena_id}/campos", response_model=CampoSaida, status_code=201, tags=["Arenas"])
+def adicionar_campo(arena_id: int, dados: CampoCriar, db: DB, usuario: UsuarioLogado):
+    return arenas.adicionar_campo(db, usuario, arena_id, dados)
+
+
+@router.put("/arenas/{arena_id}/campos/{campo_id}", response_model=CampoSaida, tags=["Arenas"])
+def atualizar_campo(arena_id: int, campo_id: int, dados: CampoCriar, db: DB, usuario: UsuarioLogado):
+    return arenas.atualizar_campo(db, usuario, arena_id, campo_id, dados)
+
+
+@router.delete("/arenas/{arena_id}/campos/{campo_id}", status_code=204, tags=["Arenas"])
+def excluir_campo(arena_id: int, campo_id: int, db: DB, usuario: UsuarioLogado):
+    arenas.excluir_campo(db, usuario, arena_id, campo_id)
+    return Response(status_code=204)
+
+
 # ---------- partidas ----------
 @router.get("/partidas", response_model=list[PartidaSaida], tags=["Partidas"])
 def listar_partidas(
@@ -114,9 +138,11 @@ def listar_partidas(
     status: StatusPartida | None = None,
     time_id: int | None = None,
     arena_id: int | None = None,
+    campo_id: int | None = None,
     futuras: bool | None = None,
 ):
-    return partidas.listar(db, status=status, time_id=time_id, arena_id=arena_id, futuras=futuras)
+    return partidas.listar(db, status=status, time_id=time_id, arena_id=arena_id, campo_id=campo_id,
+                           futuras=futuras)
 
 
 @router.get("/partidas/{partida_id}", response_model=PartidaSaida, tags=["Partidas"])

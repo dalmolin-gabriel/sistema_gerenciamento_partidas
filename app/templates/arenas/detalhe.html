@@ -14,10 +14,32 @@
 </div>
 <dl class="numeros">
   <div><dt>Valor da hora</dt><dd>{{ arena.valor_hora|dinheiro }}</dd></div>
+  <div><dt>Campos</dt><dd>{{ arena.campos|length }}</dd></div>
   <div><dt>Endereço</dt><dd class="txt">{{ arena.endereco }}</dd></div>
   <div><dt>Telefone</dt><dd class="txt">{{ arena.telefone or "—" }}</dd></div>
   <div><dt>Proprietário</dt><dd class="txt">{{ arena.proprietario.nome }}</dd></div>
 </dl>
+
+{% if arena.varios_campos %}
+<h2 class="secao">Campos</h2>
+<ul class="lista-simples">
+  {% for c in arena.campos %}
+  <li>
+    {% if usuario %}<a href="/partidas/nova?campo_id={{ c.id }}">{{ c.nome }}</a>{% else %}<b>{{ c.nome }}</b>{% endif %}
+    <span>{{ c.preco_hora|dinheiro }}/hora</span>
+  </li>
+  {% endfor %}
+</ul>
+{% endif %}
+
 <h2 class="secao">Agenda</h2>
-{{ lista_partidas(agenda, "Nenhum horário reservado. Agenda livre!") }}
+{% if arena.varios_campos %}
+<nav class="abas">
+  <a href="/arenas/{{ arena.id }}" {% if not campo_atual %}aria-current="page"{% endif %}>Todos</a>
+  {% for c in arena.campos %}
+  <a href="/arenas/{{ arena.id }}?campo={{ c.id }}" {% if campo_atual == c.id %}aria-current="page"{% endif %}>{{ c.nome }}</a>
+  {% endfor %}
+</nav>
+{% endif %}
+{{ lista_partidas(agenda, "Nenhum horário reservado. Agenda livre!", mostrar_arena=not arena.varios_campos) }}
 {% endblock %}

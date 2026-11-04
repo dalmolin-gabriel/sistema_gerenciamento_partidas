@@ -10,6 +10,7 @@ from app.errors import ErroDominio
 from app.models import StatusPartida, TipoUsuario
 from app.schemas import (
     ArenaCriar,
+    CampoCriar,
     PartidaCriar,
     PartidaRemarcar,
     Placar,
@@ -191,7 +192,13 @@ def _arena_do_form(form) -> ArenaCriar:
     return ArenaCriar(
         nome=form.get("nome", ""), endereco=form.get("endereco", ""), cidade=form.get("cidade", ""),
         telefone=form.get("telefone"), valor_hora=numero_decimal(form.get("valor_hora", "")),
+        quantidade_campos=form.get("quantidade_campos") or 1,
     )
+
+
+def _campo_do_form(form) -> CampoCriar:
+    valor = numero_decimal(form.get("valor_hora", ""))
+    return CampoCriar(nome=form.get("nome", ""), valor_hora=valor or None)
 
 
 @router.get("/arenas")
@@ -204,7 +211,7 @@ def arena_nova_form(request: Request, usuario: UsuarioLogado):
     if not usuario.eh_proprietario:
         avisar(request, "Apenas contas de proprietário podem cadastrar arenas.", "erro")
         return redirecionar("/arenas")
-    return render(request, "arenas/form.html", usuario=usuario, form={}, erros={}, arena=None)
+    return render(request, "arenas/form.html", usuario=usuario, form={"quantidade_campos": "1"}, erros={}, arena=None)
 
 
 @router.post("/arenas/nova")
@@ -220,11 +227,13 @@ async def arena_nova(request: Request, db: DB, usuario: UsuarioLogado):
 
 
 @router.get("/arenas/{arena_id}")
-def arena_detalhe(arena_id: int, request: Request, db: DB, usuario: UsuarioOpcional):
+def arena_detalhe(arena_id: int, request: Request, db: DB, usuario: UsuarioOpcional, campo: int | None = None):
     arena = arenas.obter(db, arena_id)
-    agenda = [p for p in partidas.listar(db, arena_id=arena.id, futuras=True)
+    if campo not in {c.id for c in arena.campos}:
+        campo = None
+    agenda = [p for p in partidas.listar(db, arena_id=arena.id, campo_id=campo, futuras=True)
               if p.status != StatusPartida.CANCELADA]
-    return render(request, "arenas/detalhe.html", usuario=usuario, arena=arena, agenda=agenda)
+    return render(request, "arenas/detalhe.html", usuario=usuario, arena=arena, agenda=agenda, campo_atual=campo)
 
 
 @router.get("/arenas/{arena_id}/editar")
@@ -249,6 +258,45 @@ async def arena_editar(arena_id: int, request: Request, db: DB, usuario: Usuario
                       erros=erros_do_formulario(e), arena=arena)
     avisar(request, "Arena atualizada.")
     return redirecionar(f"/arenas/{arena_id}")
+
+
+@router.post("/arenas/{arena_id}/campos/novo")
+async def campo_novo(arena_id: int, request: Request, db: DB, usuario: UsuarioLogado):
+    form = await request.form()
+    try:
+        campo = arenas.adicionar_campo(db, usuario, arena_id, _campo_do_form(form))
+    except ValidationError as e:
+        avisar(request, "Campo não adicionado: " + next(iter(erros_do_formulario(e).values())).lower(), "erro")
+    except ErroDominio as e:
+        avisar(request, e.mensagem, "erro")
+    else:
+        avisar(request, f"Campo “{campo.nome}” adicionado.")
+    return redirecionar(f"/arenas/{arena_id}/editar#campos")
+
+
+@router.post("/arenas/{arena_id}/campos/{campo_id}/editar")
+async def campo_editar(arena_id: int, campo_id: int, request: Request, db: DB, usuario: UsuarioLogado):
+    form = await request.form()
+    try:
+        arenas.atualizar_campo(db, usuario, arena_id, campo_id, _campo_do_form(form))
+    except ValidationError as e:
+        avisar(request, "Campo não salvo: " + next(iter(erros_do_formulario(e).values())).lower(), "erro")
+    except ErroDominio as e:
+        avisar(request, e.mensagem, "erro")
+    else:
+        avisar(request, "Campo atualizado.")
+    return redirecionar(f"/arenas/{arena_id}/editar#campos")
+
+
+@router.post("/arenas/{arena_id}/campos/{campo_id}/excluir")
+def campo_excluir(arena_id: int, campo_id: int, request: Request, db: DB, usuario: UsuarioLogado):
+    try:
+        arenas.excluir_campo(db, usuario, arena_id, campo_id)
+    except ErroDominio as e:
+        avisar(request, e.mensagem, "erro")
+    else:
+        avisar(request, "Campo excluído.")
+    return redirecionar(f"/arenas/{arena_id}/editar#campos")
 
 
 @router.post("/arenas/{arena_id}/excluir")
@@ -278,10 +326,17 @@ def partidas_lista(request: Request, db: DB, usuario: UsuarioOpcional, aba: str 
 
 def _contexto_nova(db, usuario, form, erros):
     sugestao = (relogio.agora() + timedelta(days=1)).replace(hour=19, minute=0, second=0)
+    lista_arenas = arenas.listar(db)
+    form = dict(form)
+    # Vindo de "Reservar horário" na página da arena: já deixa o primeiro campo dela escolhido.
+    if not form.get("campo_id") and form.get("arena_id"):
+        arena = next((a for a in lista_arenas if str(a.id) == str(form["arena_id"])), None)
+        if arena and arena.campos:
+            form["campo_id"] = arena.campos[0].id
     return dict(
         usuario=usuario, form=form, erros=erros,
         meus_times=times.listar_do_usuario(db, usuario),
-        todos_times=times.listar(db), arenas=arenas.listar(db),
+        todos_times=times.listar(db), arenas=lista_arenas,
         sugestao_data=f"{sugestao:%Y-%m-%d}", hoje=f"{relogio.agora():%Y-%m-%d}",
     )
 
@@ -298,7 +353,8 @@ async def partida_nova(request: Request, db: DB, usuario: UsuarioLogado):
     try:
         dados = PartidaCriar(
             mandante_id=form.get("mandante_id") or 0, visitante_id=form.get("visitante_id") or 0,
-            arena_id=form.get("arena_id") or 0, inicio=_inicio(form),
+            arena_id=form.get("arena_id") or None, campo_id=form.get("campo_id") or None,
+            inicio=_inicio(form),
             duracao_min=form.get("duracao_min") or 60,
         )
         partida = partidas.criar(db, usuario, dados)
@@ -308,8 +364,11 @@ async def partida_nova(request: Request, db: DB, usuario: UsuarioLogado):
             erros["data"] = erros.pop("inicio")
         return render(request, "partidas/nova.html", status_code=400, **_contexto_nova(db, usuario, form, erros))
     except ErroDominio as e:
+        erros = {"geral": e.mensagem}
+        if not form.get("campo_id"):
+            erros["campo_id"] = "Escolha a arena e o campo."
         return render(request, "partidas/nova.html", status_code=400,
-                      **_contexto_nova(db, usuario, form, {"geral": e.mensagem}))
+                      **_contexto_nova(db, usuario, form, erros))
     if partida.status == StatusPartida.CONFIRMADA:
         avisar(request, "Partida marcada e já confirmada.")
     else:
@@ -353,7 +412,8 @@ def partida_cancelar(partida_id: int, request: Request, db: DB, usuario: Usuario
 async def partida_remarcar(partida_id: int, request: Request, db: DB, usuario: UsuarioLogado):
     form = await request.form()
     try:
-        dados = PartidaRemarcar(inicio=_inicio(form), duracao_min=form.get("duracao_min") or 60)
+        dados = PartidaRemarcar(inicio=_inicio(form), duracao_min=form.get("duracao_min") or 60,
+                                campo_id=form.get("campo_id") or None)
     except ValidationError:
         avisar(request, "Informe uma data, horário e duração válidos para remarcar.", "erro")
         return redirecionar(f"/partidas/{partida_id}")

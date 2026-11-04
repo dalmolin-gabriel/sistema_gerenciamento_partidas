@@ -13,7 +13,7 @@
   {% for a in arenas %}
   <li>
     <a class="cartao cartao-arena" href="/arenas/{{ a.id }}">
-      <span class="cartao-txt"><b>{{ a.nome }}</b><small>{{ a.endereco }} · {{ a.cidade }}</small></span>
+      <span class="cartao-txt"><b>{{ a.nome }}</b><small>{{ a.endereco }} · {{ a.cidade }}{% if a.varios_campos %} · {{ a.campos|length }} campos{% endif %}</small></span>
       <span class="preco">{{ a.valor_hora|dinheiro }}<small>/hora</small></span>
     </a>
   </li>
