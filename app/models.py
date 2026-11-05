@@ -76,12 +76,22 @@ class Arena(Base):
     proprietario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
     # Arena em destaque (anúncio pago) na vitrine da página inicial até esta data, inclusive.
     destaque_ate: Mapped[date | None] = mapped_column(Date)
+    # Foto principal: nome-base dos arquivos (<foto>-1600.webp e <foto>-800.webp) e ponto de foco vertical (%).
+    foto: Mapped[str | None] = mapped_column(String(80))
+    foto_foco: Mapped[int] = mapped_column(Integer, default=50, server_default="50")
     criado_em: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     proprietario: Mapped[Usuario] = relationship(back_populates="arenas")
     campos: Mapped[list["Campo"]] = relationship(
         back_populates="arena", order_by="Campo.id", cascade="all, delete-orphan"
     )
+
+    def url_foto(self, largura: int = 1600) -> str | None:
+        return f"/fotos/{self.foto}-{largura}.webp" if self.foto else None
+
+    @property
+    def foto_url(self) -> str | None:
+        return self.url_foto(1600)
 
     def em_destaque(self, hoje: date) -> bool:
         return self.destaque_ate is not None and self.destaque_ate >= hoje

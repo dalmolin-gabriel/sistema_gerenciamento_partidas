@@ -4,7 +4,9 @@ A autenticação usa a mesma sessão (cookie) das telas: faça POST em
 /api/v1/auth/login e as próximas chamadas já vão autenticadas.
 """
 
-from fastapi import APIRouter, Request, Response, status
+from typing import Literal
+
+from fastapi import APIRouter, Form, Request, Response, UploadFile, status
 
 from app.deps import DB, UsuarioLogado
 from app.models import StatusPartida
@@ -24,7 +26,7 @@ from app.schemas import (
     UsuarioCriar,
     UsuarioSaida,
 )
-from app.services import arenas, classificacao, partidas, times, usuarios
+from app.services import arenas, classificacao, fotos, partidas, times, usuarios
 
 router = APIRouter(prefix="/api/v1")
 
@@ -106,6 +108,19 @@ def atualizar_arena(arena_id: int, dados: ArenaCriar, db: DB, usuario: UsuarioLo
 @router.delete("/arenas/{arena_id}", status_code=204, tags=["Arenas"])
 def excluir_arena(arena_id: int, db: DB, usuario: UsuarioLogado):
     arenas.excluir(db, usuario, arena_id)
+    return Response(status_code=204)
+
+
+@router.put("/arenas/{arena_id}/foto", response_model=ArenaSaida, tags=["Arenas"])
+async def enviar_foto(arena_id: int, db: DB, usuario: UsuarioLogado, foto: UploadFile,
+                      foco: Literal["topo", "centro", "base"] = Form("centro")):
+    """Envia (ou troca) a foto principal. É cortada em 16:9 e salva em 1600 e 800 px, em WebP."""
+    return fotos.salvar(db, usuario, arena_id, await foto.read(fotos.TAMANHO_MAXIMO + 1), foco)
+
+
+@router.delete("/arenas/{arena_id}/foto", status_code=204, tags=["Arenas"])
+def remover_foto(arena_id: int, db: DB, usuario: UsuarioLogado):
+    fotos.remover(db, usuario, arena_id)
     return Response(status_code=204)
 
 

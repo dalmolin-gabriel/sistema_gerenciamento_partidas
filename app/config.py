@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     debug: bool = False
     # Em produção (atrás de HTTPS) deixe True para o cookie de sessão só trafegar com criptografia.
     cookie_seguro: bool = False
+    # Pasta onde ficam as fotos enviadas. No Docker, monte um volume aqui para não perder as fotos.
+    fotos_dir: str = "dados/fotos"
 
 
 @lru_cache

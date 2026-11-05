@@ -2,6 +2,11 @@
 {% from "_macros.html" import lista_partidas %}
 {% block titulo %}{{ arena.nome }}{% endblock %}
 {% block conteudo %}
+{% if arena.foto %}
+<img class="capa-arena" alt="Foto da {{ arena.nome }}" style="--foco: {{ arena.foto_foco }}%"
+     src="{{ arena.url_foto(800) }}" srcset="{{ arena.url_foto(800) }} 800w, {{ arena.url_foto(1600) }} 1600w"
+     sizes="(max-width: 1120px) 100vw, 1100px">
+{% endif %}
 <div class="cabecalho">
   <div>
     <p class="sobretitulo">{{ arena.cidade }}</p>

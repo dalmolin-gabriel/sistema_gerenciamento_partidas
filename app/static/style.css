@@ -400,3 +400,48 @@ input:focus, select:focus { outline: 2px solid var(--destaque); outline-offset: 
   .vitrine-rodape .btn { flex: 1; }
 }
 .vitrine { background: repeating-linear-gradient(90deg, transparent 0 60px, rgb(255 255 255 / .035) 60px 120px), var(--gramado); }
+
+/* ============ Foto da arena ============ */
+.vitrine-slide { position: relative; overflow: hidden; }
+.vitrine-foto {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center var(--foco, 50%);
+}
+/* Escurece a foto para o texto e os horários continuarem legíveis. */
+.vitrine-slide.com-foto::before {
+  content: ""; position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(90deg, rgb(11 42 32 / .94) 0%, rgb(11 42 32 / .78) 45%, rgb(11 42 32 / .35) 100%);
+}
+.vitrine-slide.com-foto { border-color: rgb(255 255 255 / .2); }
+.vitrine-slide > :not(.vitrine-foto) { position: relative; z-index: 2; }
+.vitrine-slide.com-foto .vitrine-info h2, .vitrine-slide.com-foto .vitrine-local { text-shadow: 0 1px 12px rgb(0 0 0 / .5); }
+@media (max-width: 760px) {
+  .vitrine-slide.com-foto::before {
+    background: linear-gradient(180deg, rgb(11 42 32 / .55) 0%, rgb(11 42 32 / .88) 40%, rgb(11 42 32 / .96) 100%);
+  }
+}
+.capa-arena {
+  width: 100%; aspect-ratio: 16 / 5; object-fit: cover; object-position: center var(--foco, 50%);
+  border-radius: 18px; margin-bottom: 24px; background: var(--neutro-fundo);
+}
+@media (max-width: 680px) { .capa-arena { aspect-ratio: 16 / 9; } }
+
+.form-foto { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.previa-foto {
+  position: relative; aspect-ratio: 16 / 5; border-radius: 12px; overflow: hidden;
+  background: var(--neutro-fundo); border: 1px dashed var(--borda); display: grid; place-items: center;
+  color: var(--texto-2); font-size: .9rem;
+}
+.previa-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center var(--foco, 50%); }
+.previa-foto.tem-nova img:not(.previa-nova) { display: none; }
+.previa-legenda {
+  position: absolute; left: 8px; bottom: 8px; z-index: 1; background: rgb(0 0 0 / .55); color: #fff;
+  padding: 2px 8px; border-radius: 6px; font-size: .75rem;
+}
+.foto-opcoes { display: flex; flex-direction: column; gap: 14px; }
+.escolha-foco { flex-direction: row; flex-wrap: wrap; }
+.escolha-foco legend { width: 100%; }
+.escolha-foco label { padding: 8px 12px; align-items: center; }
+.escolha-foco input { margin-top: 0; }
+input[type=file] { min-height: 0; padding: 8px; }
+@media (max-width: 680px) { .form-foto { grid-template-columns: 1fr; } }

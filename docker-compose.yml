@@ -20,6 +20,9 @@ services:
       DATABASE_URL: postgresql+psycopg://partidas:partidas@db:5432/partidas
       SECRET_KEY: ${SECRET_KEY:-troque-esta-chave-em-producao}
       TIMEZONE: America/Sao_Paulo
+      FOTOS_DIR: /app/dados/fotos
+    volumes:
+      - fotos_arenas:/app/dados/fotos
     ports:
       - "8000:8000"
     depends_on:
@@ -28,3 +31,4 @@ services:
 
 volumes:
   dados_postgres:
+  fotos_arenas:

@@ -36,6 +36,10 @@ automatizados e Docker.
 - Arenas com `destaque_ate` em vigor aparecem primeiro com o selo "Destaque" (espaço para anúncio pago).
   Por enquanto o destaque é definido direto no banco.
 - Considera funcionamento das 8h às 23h para todas as arenas (`app/services/vitrine.py`).
+- O dono pode enviar uma **foto da arena**, que vira o fundo do card no quadro grande e a capa da página
+  da arena. A foto é cortada em 16:9, salva em 1600 e 800 px (WebP, sem dados de GPS) e o dono escolhe
+  o enquadramento (parte de cima, centro ou de baixo). As fotos ficam em `FOTOS_DIR`
+  (no Docker, no volume `fotos_arenas`).
 
 **Partidas**
 - Ciclo de vida: `agendada → confirmada → finalizada`, podendo ser `cancelada` antes de finalizar.
@@ -63,7 +67,7 @@ automatizados e Docker.
 | Banco de dados | PostgreSQL 16, SQLAlchemy 2, Alembic (migrações) |
 | Telas | HTML renderizado no servidor (Jinja2) + CSS próprio, responsivo e com modo escuro |
 | Validação | Pydantic, com mensagens de erro em português |
-| Testes | pytest (62 testes, rodam em SQLite e PostgreSQL) |
+| Testes | pytest (73 testes, rodam em SQLite e PostgreSQL) |
 | Infra | Docker, Docker Compose, GitHub Actions |
 
 ---

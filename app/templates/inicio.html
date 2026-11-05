@@ -23,7 +23,13 @@
   <div class="vitrine-trilho" tabindex="0" aria-label="Arenas. Use as setas para navegar.">
     {% for item in vitrine %}
     {% set a = item.arena %}
-    <article class="vitrine-slide" id="arena-{{ a.id }}" aria-label="{{ loop.index }} de {{ vitrine|length }}: {{ a.nome }}">
+    <article class="vitrine-slide {% if a.foto %}com-foto{% endif %}" id="arena-{{ a.id }}" aria-label="{{ loop.index }} de {{ vitrine|length }}: {{ a.nome }}"
+             {% if a.foto %}style="--foco: {{ a.foto_foco }}%"{% endif %}>
+      {% if a.foto %}
+      <img class="vitrine-foto" alt="" {% if not loop.first %}loading="lazy"{% endif %}
+           src="{{ a.url_foto(800) }}" srcset="{{ a.url_foto(800) }} 800w, {{ a.url_foto(1600) }} 1600w"
+           sizes="(max-width: 760px) 100vw, 1100px">
+      {% endif %}
       <div class="vitrine-info">
         {% if item.destaque %}<span class="selo-destaque">Destaque</span>{% endif %}
         <h2><a href="/arenas/{{ a.id }}">{{ a.nome }}</a></h2>

@@ -11,6 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.api.routes import router as api_router
 from app.config import get_settings
 from app.errors import ErroDominio, NaoAutenticado
+from app.services.fotos import pasta_fotos
 from app.web.routes import router as web_router
 
 BASE = Path(__file__).parent
@@ -33,6 +34,7 @@ def create_app() -> FastAPI:
         max_age=60 * 60 * 24 * 14,
     )
     app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
+    app.mount("/fotos", StaticFiles(directory=pasta_fotos(), check_dir=False), name="fotos")
     app.include_router(api_router)
     app.include_router(web_router)
 

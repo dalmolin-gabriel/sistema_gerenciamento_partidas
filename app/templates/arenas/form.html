@@ -24,6 +24,56 @@
   </form>
 
   {% if arena %}
+  <section class="gestao-campos" id="foto">
+    <h2 class="secao">Foto da arena</h2>
+    <p class="sub">Aparece no quadro grande da página inicial e no topo da página da arena.
+      Use uma foto <b>deitada (horizontal)</b>, de pelo menos 1600 px de largura, com o campo no centro.</p>
+    {% set foco_atual = {0: "topo", 100: "base"}.get(arena.foto_foco, "centro") %}
+    <form method="post" action="/arenas/{{ arena.id }}/foto" enctype="multipart/form-data" class="form-foto">
+      <div class="previa-foto" style="--foco: {{ arena.foto_foco }}%">
+        {% if arena.foto %}
+          <img src="{{ arena.url_foto(800) }}" alt="Foto atual da {{ arena.nome }}">
+        {% else %}
+          <span>Sem foto ainda</span>
+        {% endif %}
+        <img class="previa-nova" alt="" hidden>
+        <small class="previa-legenda">Como fica no quadro (computador)</small>
+      </div>
+      <div class="foto-opcoes">
+        <label class="campo"><span>{{ "Trocar foto" if arena.foto else "Escolher foto" }}</span>
+          <input type="file" name="foto" accept="image/jpeg,image/png,image/webp">
+          <small>JPG, PNG ou WebP, até 8 MB.</small></label>
+        <fieldset class="escolha escolha-foco">
+          <legend>Mostrar mais da foto</legend>
+          {% for valor, rotulo in [("topo", "Parte de cima"), ("centro", "Centro"), ("base", "Parte de baixo")] %}
+          <label><input type="radio" name="foco" value="{{ valor }}" {% if valor == foco_atual %}checked{% endif %}><span><b>{{ rotulo }}</b></span></label>
+          {% endfor %}
+        </fieldset>
+        <div class="acoes">
+          <button class="btn">Salvar foto</button>
+          {% if arena.foto %}<button class="btn btn-perigo" form="remover-foto">Remover foto</button>{% endif %}
+        </div>
+      </div>
+    </form>
+    {% if arena.foto %}<form id="remover-foto" method="post" action="/arenas/{{ arena.id }}/foto/remover"
+          data-msg="Remover a foto da arena?" onsubmit="return confirm(this.dataset.msg)" hidden></form>{% endif %}
+    <script>
+    (() => {
+      // Prévia ao vivo: mostra a foto escolhida e o enquadramento antes de enviar.
+      const form = document.querySelector(".form-foto"), previa = form.querySelector(".previa-foto");
+      const nova = form.querySelector(".previa-nova");
+      form.foto.addEventListener("change", () => {
+        const f = form.foto.files[0];
+        if (!f) return;
+        nova.src = URL.createObjectURL(f); nova.hidden = false;
+        previa.classList.add("tem-nova");
+      });
+      form.querySelectorAll("[name=foco]").forEach((r) => r.addEventListener("change", () =>
+        previa.style.setProperty("--foco", { topo: "0%", centro: "50%", base: "100%" }[r.value])));
+    })();
+    </script>
+  </section>
+
   <section class="gestao-campos" id="campos">
     <h2 class="secao">Campos <span class="contador">{{ arena.campos|length }}</span></h2>
     <p class="sub">Cada campo tem a sua própria agenda. Deixe o preço vazio para usar o valor da hora da arena ({{ arena.valor_hora|dinheiro }}).</p>

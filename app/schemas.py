@@ -121,6 +121,7 @@ class ArenaSaida(BaseModel):
     valor_hora: Decimal
     proprietario_id: int
     campos: list[CampoSaida]
+    foto_url: str | None = None
 
 
 # ---------- Partidas ----------

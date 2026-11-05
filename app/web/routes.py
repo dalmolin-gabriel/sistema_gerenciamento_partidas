@@ -17,7 +17,7 @@ from app.schemas import (
     TimeCriar,
     UsuarioCriar,
 )
-from app.services import arenas, classificacao, partidas, relogio, times, usuarios, vitrine
+from app.services import arenas, classificacao, fotos, partidas, relogio, times, usuarios, vitrine
 from app.web.ui import avisar, erros_do_formulario, numero_decimal, redirecionar, render
 
 router = APIRouter(include_in_schema=False)
@@ -261,6 +261,29 @@ async def arena_editar(arena_id: int, request: Request, db: DB, usuario: Usuario
                       erros=erros_do_formulario(e), arena=arena)
     avisar(request, "Arena atualizada.")
     return redirecionar(f"/arenas/{arena_id}")
+
+
+@router.post("/arenas/{arena_id}/foto")
+async def arena_foto(arena_id: int, request: Request, db: DB, usuario: UsuarioLogado):
+    form = await request.form()
+    arquivo = form.get("foto")
+    try:
+        if arquivo is not None and getattr(arquivo, "filename", ""):
+            fotos.salvar(db, usuario, arena_id, await arquivo.read(fotos.TAMANHO_MAXIMO + 1), form.get("foco", "centro"))
+            avisar(request, "Foto atualizada. Veja como ficou na página inicial.")
+        else:
+            fotos.definir_foco(db, usuario, arena_id, form.get("foco", "centro"))
+            avisar(request, "Enquadramento atualizado.")
+    except ErroDominio as e:
+        avisar(request, e.mensagem, "erro")
+    return redirecionar(f"/arenas/{arena_id}/editar#foto")
+
+
+@router.post("/arenas/{arena_id}/foto/remover")
+def arena_foto_remover(arena_id: int, request: Request, db: DB, usuario: UsuarioLogado):
+    fotos.remover(db, usuario, arena_id)
+    avisar(request, "Foto removida.")
+    return redirecionar(f"/arenas/{arena_id}/editar#foto")
 
 
 @router.post("/arenas/{arena_id}/campos/novo")
